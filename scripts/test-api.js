@@ -1,11 +1,18 @@
-// Simple test script to hit the backend API at 192.168.1.20
-// Requires Node 18+ (global fetch). Run: `node scripts/test-api.js`
+// Simple test script to hit the backend API.
+// Requires Node 18+ (global fetch).
+// Usage: API_BASE=http://localhost:8000 TEST_EMAIL=user@example.com TEST_PASSWORD=secret node scripts/test-api.js
 
-const BASE = process.env.API_BASE || 'http://192.168.1.20'
+const BASE = process.env.API_BASE || 'http://localhost:8000'
 
 async function login() {
+  const email = process.env.TEST_EMAIL
+  const password = process.env.TEST_PASSWORD
+  if (!email || !password) {
+    console.error('Set TEST_EMAIL and TEST_PASSWORD environment variables')
+    process.exit(1)
+  }
   const url = `${BASE}/api/login`
-  const body = { email: 'guru@kuiskita.com', password: 'guru123' }
+  const body = { email, password }
   console.log('POST', url, body)
   const res = await fetch(url, {
     method: 'POST',

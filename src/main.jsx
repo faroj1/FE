@@ -9,7 +9,6 @@ const mount = async () => {
   const envBase = import.meta.env.VITE_API_BASE
   if (envBase) {
     setApiBase(envBase)
-    console.log('Using VITE_API_BASE =', envBase)
   } else {
     const detected = await detectAndSetBase()
     if (detected) setApiBase(detected)

@@ -15,6 +15,7 @@ export default function Register() {
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError(null)
+    if (password.length < 8) return setError('Password minimal 8 karakter')
     if (password !== confirmPassword) return setError('Password tidak cocok')
     setLoading(true)
     const defaultName = email.split('@')[0] || 'Guru'
@@ -50,7 +51,7 @@ export default function Register() {
 
         <label>Buat Kata Sandi</label>
         <div className="input-wrap">
-          <input type={show ? 'text' : 'password'} placeholder="Minimal 8 karakter" value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete="new-password" />
+          <input type={show ? 'text' : 'password'} placeholder="Minimal 8 karakter" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={8} autoComplete="new-password" />
           <button type="button" className="icon-btn" onClick={() => setShow((s) => !s)} aria-label="toggle">
             {show ? (
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 3l18 18" stroke="#6b7280" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
