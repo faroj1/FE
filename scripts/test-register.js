@@ -18,7 +18,7 @@ async function register() {
     body: JSON.stringify(body),
   })
   let data = null
-  try { data = await res.json() } catch (e) { data = null }
+  try { data = await res.json() } catch (e) { console.warn('Failed to parse register response:', e.message) }
   console.log('Status:', res.status)
   console.log('Response:', JSON.stringify(data, null, 2))
 }

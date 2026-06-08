@@ -7,9 +7,19 @@ export const setApiBase = (url) => {
 console.log('API baseUrl =', baseUrl)
 
 const handleResponse = async (res) => {
-  const text = await res.text().catch(() => '')
-  let data = null
-  try { data = text ? JSON.parse(text) : null } catch { data = text }
+  let text = ''
+  try {
+    text = await res.text()
+  } catch (err) {
+    console.warn('Failed to read response body:', err)
+  }
+  let data
+  try {
+    data = text ? JSON.parse(text) : null
+  } catch (parseErr) {
+    console.warn('Response is not JSON, using raw text. Parse error:', parseErr.message)
+    data = text
+  }
   if (res.ok) return { ok: true, data }
   return { ok: false, status: res.status, data }
 }
@@ -91,6 +101,7 @@ export const detectAndSetBase = async (candidates = []) => {
       clearTimeout(id)
       return true
     } catch (err) {
+      console.debug(`Probe ${url} failed:`, err.message)
       return false
     }
   }
@@ -99,7 +110,6 @@ export const detectAndSetBase = async (candidates = []) => {
     // try candidate root quickly
     // if reachable, set and return
     // attempt probe
-    // eslint-disable-next-line no-await-in-loop
     const ok = await probe(cand)
     if (ok) {
       baseUrl = cand.replace(/\/$/, '')
@@ -107,7 +117,6 @@ export const detectAndSetBase = async (candidates = []) => {
       return baseUrl
     }
     // short wait before next
-    // eslint-disable-next-line no-await-in-loop
     await timeout(200)
   }
 

@@ -15,25 +15,31 @@ export default function Login() {
     e.preventDefault()
     setLoading(true)
     setError(null)
-    const res = await login({ email, password })
-    setLoading(false)
-    if (res.ok) {
-      // backend returns { success:true, message, data: { token, user } }
-      const payload = res.data?.data || {}
-      const token = payload.token
-      const user = payload.user
-      if (token) localStorage.setItem('token', token)
-      if (user) localStorage.setItem('user', JSON.stringify(user))
-      alert(res.data?.message || 'Login berhasil')
-      navigate('/')
-    } else {
-      // handle validation errors (422)
-      if (res.status === 422 && res.data?.errors) {
-        const messages = Object.values(res.data.errors).flat().join(' ')
-        setError(messages || res.data?.message || 'Validasi gagal')
+    try {
+      const res = await login({ email, password })
+      if (res.ok) {
+        // backend returns { success:true, message, data: { token, user } }
+        const payload = res.data?.data || {}
+        const token = payload.token
+        const user = payload.user
+        if (token) localStorage.setItem('token', token)
+        if (user) localStorage.setItem('user', JSON.stringify(user))
+        alert(res.data?.message || 'Login berhasil')
+        navigate('/')
       } else {
-        setError(res.data?.message || `Login gagal (status ${res.status})`)
+        // handle validation errors (422)
+        if (res.status === 422 && res.data?.errors) {
+          const messages = Object.values(res.data.errors).flat().join(' ')
+          setError(messages || res.data?.message || 'Validasi gagal')
+        } else {
+          setError(res.data?.message || `Login gagal (status ${res.status})`)
+        }
       }
+    } catch (err) {
+      console.error('Login error:', err)
+      setError('Terjadi kesalahan tak terduga. Silakan coba lagi.')
+    } finally {
+      setLoading(false)
     }
   }
 

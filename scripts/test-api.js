@@ -12,7 +12,12 @@ async function login() {
     headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
     body: JSON.stringify(body),
   })
-  const data = await res.json().catch(() => null)
+  let data = null
+  try {
+    data = await res.json()
+  } catch (err) {
+    console.warn('Failed to parse login response as JSON:', err.message)
+  }
   console.log('Status:', res.status)
   console.log('Response:', JSON.stringify(data, null, 2))
   return { ok: res.ok, status: res.status, data }
@@ -22,7 +27,12 @@ async function me(token) {
   const url = `${BASE}/api/me`
   console.log('GET', url)
   const res = await fetch(url, { headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' } })
-  const data = await res.json().catch(() => null)
+  let data = null
+  try {
+    data = await res.json()
+  } catch (err) {
+    console.warn('Failed to parse /api/me response as JSON:', err.message)
+  }
   console.log('Status:', res.status)
   console.log('Response:', JSON.stringify(data, null, 2))
 }

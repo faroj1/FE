@@ -25,4 +25,10 @@ const mount = async () => {
   )
 }
 
-mount()
+mount().catch((err) => {
+  console.error('Failed to mount application:', err)
+  const root = document.getElementById('root')
+  if (root) {
+    root.innerHTML = '<div style="padding:2rem;color:#dc2626;font-family:sans-serif"><h2>Application failed to load</h2><p>' + err.message + '</p></div>'
+  }
+})

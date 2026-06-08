@@ -17,19 +17,25 @@ export default function Register() {
     setError(null)
     if (password !== confirmPassword) return setError('Password tidak cocok')
     setLoading(true)
-    const defaultName = email.split('@')[0] || 'Guru'
-    const res = await register({ name: defaultName, email, password, password_confirmation: confirmPassword })
-    setLoading(false)
-    if (res.ok) {
-      alert(res.data?.message || 'Registrasi berhasil — silakan login')
-      navigate('/login')
-    } else {
-      if (res.status === 422 && res.data?.errors) {
-        const messages = Object.values(res.data.errors).flat().join(' ')
-        setError(messages || res.data?.message || 'Validasi gagal')
+    try {
+      const defaultName = email.split('@')[0] || 'Guru'
+      const res = await register({ name: defaultName, email, password, password_confirmation: confirmPassword })
+      if (res.ok) {
+        alert(res.data?.message || 'Registrasi berhasil — silakan login')
+        navigate('/login')
       } else {
-        setError(res.data?.message || `Registrasi gagal (status ${res.status})`)
+        if (res.status === 422 && res.data?.errors) {
+          const messages = Object.values(res.data.errors).flat().join(' ')
+          setError(messages || res.data?.message || 'Validasi gagal')
+        } else {
+          setError(res.data?.message || `Registrasi gagal (status ${res.status})`)
+        }
       }
+    } catch (err) {
+      console.error('Register error:', err)
+      setError('Terjadi kesalahan tak terduga. Silakan coba lagi.')
+    } finally {
+      setLoading(false)
     }
   }
 
