@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import AuthCard from '../components/AuthCard'
 import { login, me } from '../utils/api'
+import { saveToken, saveUser, decodeToken } from '../utils/auth'
 
 export default function Login() {
   const [email, setEmail] = useState('')
@@ -15,29 +16,47 @@ export default function Login() {
     e.preventDefault()
     setLoading(true)
     setError(null)
+
     const res = await login({ email, password })
     setLoading(false)
+
     if (res.ok) {
-      // normalize token & user from common response shapes
-      const token = res?.data?.token || res?.data?.data?.token || res?.token || res?.access_token
+      // Extract JWT token from various possible response shapes
+      const token =
+        res.data?.token ||
+        res.data?.access_token ||
+        res.data?.data?.token ||
+        res.data?.data?.access_token
+
       if (token) {
-        localStorage.setItem('token', token)
-        // try to fetch profile immediately
+        // Persist JWT token
+        saveToken(token)
+
+        // Try to decode user info from JWT payload directly
+        const payload = decodeToken(token)
+        if (payload) {
+          saveUser({
+            id: payload.sub || payload.id,
+            name: payload.name,
+            email: payload.email,
+          })
+        }
+
+        // Also try to fetch full profile from /api/me
         try {
           const meRes = await me()
           if (meRes.ok) {
             const user = meRes.data?.data || meRes.data
-            if (user) {
-              try { localStorage.setItem('user', JSON.stringify(user)) } catch (e) {}
-            }
+            if (user) saveUser(user)
           }
         } catch (e) {
-          // ignore — we'll still navigate
-          console.warn('me() failed after login:', e)
+          console.warn('[Login] /api/me failed, using token payload instead')
         }
+
+        navigate('/dashboard')
+      } else {
+        setError('Server tidak mengembalikan token. Periksa konfigurasi backend.')
       }
-      alert('Login berhasil')
-      navigate('/dashboard')
     } else {
       setError(res.data?.message || `Login gagal (status ${res.status})`)
     }
@@ -60,7 +79,7 @@ export default function Login() {
           />
         </div>
 
-        <label>Buat Kata Sandi</label>
+        <label>Kata Sandi</label>
         <div className="input-wrap">
           <input
             type={show ? 'text' : 'password'}
@@ -69,11 +88,21 @@ export default function Login() {
             onChange={(e) => setPassword(e.target.value)}
             required
           />
-          <button type="button" className="icon-btn" onClick={() => setShow((s) => !s)} aria-label="toggle">
+          <button
+            type="button"
+            className="icon-btn"
+            onClick={() => setShow((s) => !s)}
+            aria-label="toggle"
+          >
             {show ? (
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 3l18 18" stroke="#6b7280" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                <path d="M3 3l18 18" stroke="#6b7280" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
             ) : (
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 5c5 0 9 4 9 7s-4 7-9 7-9-4-9-7 4-7 9-7z" stroke="#6b7280" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /><circle cx="12" cy="12" r="3" stroke="#6b7280" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                <path d="M12 5c5 0 9 4 9 7s-4 7-9 7-9-4-9-7 4-7 9-7z" stroke="#6b7280" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                <circle cx="12" cy="12" r="3" stroke="#6b7280" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
             )}
           </button>
         </div>
@@ -81,7 +110,7 @@ export default function Login() {
         {error && <div className="auth-error">{error}</div>}
 
         <button type="submit" className="auth-btn" disabled={loading}>
-          {loading ? 'Loading...' : 'Masuk'}
+          {loading ? 'Memuat...' : 'Masuk'}
         </button>
 
         <div className="auth-footer-links">

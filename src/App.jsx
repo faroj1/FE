@@ -5,6 +5,7 @@ import Login from './pages/Login'
 import Register from './pages/Register'
 import QuizList from './pages/QuizList'
 import Dashboard from './pages/Dashboard'
+import ProtectedRoute from './components/ProtectedRoute'
 
 function App() {
   const navigate = useNavigate()
@@ -110,7 +111,14 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/daftar-kuis" element={<QuizList searchTerm={searchTerm} />} />
-          <Route path="/dashboard" element={<Dashboard />} />
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            }
+          />
           <Route path="/" element={<Home />} />
         </Routes>
       </main>
