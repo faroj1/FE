@@ -1,27 +1,43 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import AuthCard from '../components/AuthCard'
 import { register } from '../utils/api'
+import { saveToken, saveUser, decodeToken } from '../utils/auth'
 
 export default function Register() {
-
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [show, setShow] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+  const navigate = useNavigate()
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError(null)
     if (password !== confirmPassword) return setError('Password tidak cocok')
     setLoading(true)
-    // Some backends require a `name` field. Derive a default name from the email so UI stays simple.
-    const defaultName = (email || '').split('@')[0] || 'user'
-    const res = await register({ name: defaultName, email, password, password_confirmation: confirmPassword })
+    const res = await register({ email, password, password_confirmation: confirmPassword })
     setLoading(false)
+
     if (res.ok) {
-      alert('Registrasi berhasil — silakan login')
+      // Some backends return a JWT token on registration
+      const token =
+        res.data?.token ||
+        res.data?.access_token ||
+        res.data?.data?.token ||
+        res.data?.data?.access_token
+
+      if (token) {
+        saveToken(token)
+        const payload = decodeToken(token)
+        if (payload) saveUser({ id: payload.sub || payload.id, name: payload.name, email: payload.email })
+        navigate('/dashboard')
+      } else {
+        // No token on register — redirect to login
+        navigate('/login')
+      }
     } else {
       setError(res.data?.message || `Registrasi gagal (status ${res.status})`)
     }
@@ -43,9 +59,9 @@ export default function Register() {
           <input type={show ? 'text' : 'password'} placeholder="Minimal 8 karakter" value={password} onChange={(e) => setPassword(e.target.value)} required />
           <button type="button" className="icon-btn" onClick={() => setShow((s) => !s)} aria-label="toggle">
             {show ? (
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 3l18 18" stroke="#6b7280" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M3 3l18 18" stroke="#6b7280" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
             ) : (
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 5c5 0 9 4 9 7s-4 7-9 7-9-4-9-7 4-7 9-7z" stroke="#6b7280" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /><circle cx="12" cy="12" r="3" stroke="#6b7280" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 5c5 0 9 4 9 7s-4 7-9 7-9-4-9-7 4-7 9-7z" stroke="#6b7280" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /><circle cx="12" cy="12" r="3" stroke="#6b7280" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
             )}
           </button>
         </div>
@@ -55,9 +71,9 @@ export default function Register() {
           <input type={show ? 'text' : 'password'} placeholder="Ulangi kata sandi" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required />
           <button type="button" className="icon-btn" onClick={() => setShow((s) => !s)} aria-label="toggle">
             {show ? (
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 3l18 18" stroke="#6b7280" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M3 3l18 18" stroke="#6b7280" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
             ) : (
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 5c5 0 9 4 9 7s-4 7-9 7-9-4-9-7 4-7 9-7z" stroke="#6b7280" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /><circle cx="12" cy="12" r="3" stroke="#6b7280" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 5c5 0 9 4 9 7s-4 7-9 7-9-4-9-7 4-7 9-7z" stroke="#6b7280" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /><circle cx="12" cy="12" r="3" stroke="#6b7280" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
             )}
           </button>
         </div>
@@ -65,7 +81,7 @@ export default function Register() {
         {error && <div className="auth-error">{error}</div>}
 
         <button type="submit" className="auth-btn" disabled={loading}>
-          {loading ? 'Loading...' : 'Daftar'}
+          {loading ? 'Mendaftar...' : 'Daftar'}
         </button>
 
         <div className="auth-footer-links">
