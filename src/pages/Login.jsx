@@ -1,6 +1,7 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import AuthCard from '../components/AuthCard'
-import { login } from '../utils/api'
+import { login, me } from '../utils/api'
 
 export default function Login() {
   const [email, setEmail] = useState('')
@@ -8,6 +9,7 @@ export default function Login() {
   const [show, setShow] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+  const navigate = useNavigate()
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -16,8 +18,26 @@ export default function Login() {
     const res = await login({ email, password })
     setLoading(false)
     if (res.ok) {
-      if (res.data && res.data.token) localStorage.setItem('token', res.data.token)
+      // normalize token & user from common response shapes
+      const token = res?.data?.token || res?.data?.data?.token || res?.token || res?.access_token
+      if (token) {
+        localStorage.setItem('token', token)
+        // try to fetch profile immediately
+        try {
+          const meRes = await me()
+          if (meRes.ok) {
+            const user = meRes.data?.data || meRes.data
+            if (user) {
+              try { localStorage.setItem('user', JSON.stringify(user)) } catch (e) {}
+            }
+          }
+        } catch (e) {
+          // ignore — we'll still navigate
+          console.warn('me() failed after login:', e)
+        }
+      }
       alert('Login berhasil')
+      navigate('/dashboard')
     } else {
       setError(res.data?.message || `Login gagal (status ${res.status})`)
     }
