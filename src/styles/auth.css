@@ -1,0 +1,95 @@
+.auth-card-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 56px 24px;
+  position: relative;
+  width: 100%;
+}
+
+.auth-card {
+  width: 560px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.98), #ffffff);
+  border-radius: 18px;
+  box-shadow: 0 18px 50px rgba(12, 20, 40, 0.12);
+  padding: 40px 44px;
+  position: relative;
+  z-index: 2;
+  box-sizing: border-box;
+}
+
+.auth-title {
+  margin: 0 0 6px 0;
+  font-size: 20px;
+  text-align: center;
+  color: #0b1220;
+}
+
+.auth-subtitle {
+  font-size: 13px;
+  color: #6b7280;
+  text-align: center;
+  margin: 0 0 18px;
+}
+
+.auth-body { display:block }
+
+.auth-form { display:flex; flex-direction:column; gap:10px }
+.auth-form label { font-size:13px; color:#6b7280; text-align:left; display:block; margin-bottom:6px }
+
+.input-wrap { position: relative }
+.input-wrap input {
+  width: 100%;
+  height: 46px;
+  padding: 12px 44px 12px 18px;
+  border-radius: 12px;
+  border: 1px solid #eef0f5;
+  background: #f6f7fb;
+  font-size: 15px;
+  outline: none;
+  box-shadow: inset 0 3px 8px rgba(10, 14, 30, 0.04);
+  box-sizing: border-box;
+}
+
+.icon-btn {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: none;
+  background: transparent;
+  padding: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.auth-btn {
+  margin-top: 6px;
+  background: linear-gradient(90deg,#0e63e8,#1667d9 50%, #2ea0ff);
+  color: #fff;
+  border: none;
+  padding: 12px 18px;
+  border-radius: 999px;
+  cursor: pointer;
+  font-weight: 600;
+  box-shadow: 0 8px 24px rgba(16, 70, 150, 0.14);
+}
+
+.auth-btn:disabled { opacity:0.7; cursor:default }
+
+.auth-error { color:#b00020; background:#fff5f6; padding:10px; border-radius:10px; font-size:13px }
+
+.auth-footer-links { margin-top:10px; font-size:13px; color:#6b7280; text-align:center }
+.auth-footer-links a { color:#1f6feb; text-decoration:none; margin-left:6px }
+
+/* decorative blobs */
+.auth-blob { position: absolute; width: 220px; height: 220px; border-radius: 50%; filter: blur(34px); opacity: 0.9 }
+.auth-blob-left { left: 40px; top: -40px; background: radial-gradient(circle at 30% 30%, rgba(14,99,232,0.18), rgba(14,99,232,0.06)); }
+.auth-blob-right { right: -20px; bottom: -30px; background: radial-gradient(circle at 70% 70%, rgba(34,197,94,0.14), rgba(34,197,94,0.04)); }
+
+@media (max-width: 900px) {
+  .auth-card { width: 92%; padding: 20px }
+  .auth-card-wrapper { padding: 28px 12px }
+}
