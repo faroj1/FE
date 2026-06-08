@@ -8,6 +8,18 @@ export default defineConfig(({ mode }) => {
 
   const cfg = {
     plugins: [react()],
+    test: {
+      environment: 'jsdom',
+      globals: true,
+      setupFiles: './src/test/setup.js',
+      css: false,
+      coverage: {
+        provider: 'v8',
+        reporter: ['text', 'text-summary', 'lcov'],
+        include: ['src/**/*.{js,jsx}'],
+        exclude: ['src/test/**', 'src/main.jsx'],
+      },
+    },
   }
 
   if (proxyTarget) {
