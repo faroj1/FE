@@ -4,6 +4,8 @@ export const setApiBase = (url) => {
   baseUrl = (url || '').replace(/\/$/, '')
 }
 
+export const getApiBase = () => baseUrl
+
 const handleResponse = async (res) => {
   const text = await res.text().catch(() => '')
   let data = null
@@ -32,5 +34,11 @@ export const me = () => {
   const token = localStorage.getItem('token')
   return fetch(`${baseUrl}/auth/me`, {
     headers: { Authorization: token ? `Bearer ${token}` : '' },
+  }).then(handleResponse)
+}
+
+export const getQuizzes = () => {
+  return fetch(`${baseUrl}/quizzes`, {
+    headers: { 'Content-Type': 'application/json' },
   }).then(handleResponse)
 }

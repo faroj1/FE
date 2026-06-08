@@ -33,7 +33,7 @@ export default function Home() {
           </div>
 
           <div style={{ textAlign: 'center', marginTop: 22 }}>
-            <button className="secondary">Jelajahi Kuis Umum</button>
+            <Link to="/daftar-kuis" style={{ background: '#ffe9cf', border: 'none', padding: '10px 22px', borderRadius: '8px', color: '#6b4a13', fontWeight: 600, textDecoration: 'none', display: 'inline-block' }}>Jelajahi Kuis Umum</Link>
           </div>
         </div>
       </div>
