@@ -66,6 +66,7 @@ function App() {
                   background: '#f8fafc',
                   outline: 'none',
                   transition: 'all 0.2s ease',
+                  boxSizing: 'border-box',
                 }}
                 onFocus={(e) => e.target.style.borderColor = '#1976d2'}
                 onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
