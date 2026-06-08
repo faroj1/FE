@@ -3,15 +3,26 @@ import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import './index.css'
 import App from './App.jsx'
-import { setApiBase } from './utils/api'
+import { setApiBase, detectAndSetBase } from './utils/api'
 
-createRoot(document.getElementById('root')).render(
-  <StrictMode>
-    <BrowserRouter>
-      <App />
-    </BrowserRouter>
-  </StrictMode>,
-)
+const mount = async () => {
+  const envBase = import.meta.env.VITE_API_BASE
+  if (envBase) {
+    setApiBase(envBase)
+    console.log('Using VITE_API_BASE =', envBase)
+  } else {
+    const detected = await detectAndSetBase()
+    if (detected) setApiBase(detected)
+    else setApiBase('')
+  }
 
-// Set backend base URL from env (optional)
-setApiBase(import.meta.env.VITE_API_BASE || '')
+  createRoot(document.getElementById('root')).render(
+    <StrictMode>
+      <BrowserRouter>
+        <App />
+      </BrowserRouter>
+    </StrictMode>,
+  )
+}
+
+mount()

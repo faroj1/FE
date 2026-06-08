@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import AuthCard from '../components/AuthCard'
 import { login } from '../utils/api'
 
@@ -8,6 +9,7 @@ export default function Login() {
   const [show, setShow] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+  const navigate = useNavigate()
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -16,10 +18,22 @@ export default function Login() {
     const res = await login({ email, password })
     setLoading(false)
     if (res.ok) {
-      if (res.data && res.data.token) localStorage.setItem('token', res.data.token)
-      alert('Login berhasil')
+      // backend returns { success:true, message, data: { token, user } }
+      const payload = res.data?.data || {}
+      const token = payload.token
+      const user = payload.user
+      if (token) localStorage.setItem('token', token)
+      if (user) localStorage.setItem('user', JSON.stringify(user))
+      alert(res.data?.message || 'Login berhasil')
+      navigate('/')
     } else {
-      setError(res.data?.message || `Login gagal (status ${res.status})`)
+      // handle validation errors (422)
+      if (res.status === 422 && res.data?.errors) {
+        const messages = Object.values(res.data.errors).flat().join(' ')
+        setError(messages || res.data?.message || 'Validasi gagal')
+      } else {
+        setError(res.data?.message || `Login gagal (status ${res.status})`)
+      }
     }
   }
 
@@ -29,6 +43,10 @@ export default function Login() {
       subtitle="Masukkan email dan kata sandi Anda untuk mengakses dashboard"
     >
       <form onSubmit={handleSubmit} className="auth-form">
+        {/* Dummy inputs to prevent browser autofill */}
+        <input style={{ position: 'absolute', top: '-9999px', left: '-9999px' }} type="text" name="fakeusername" tabIndex="-1" aria-hidden="true" />
+        <input style={{ position: 'absolute', top: '-9999px', left: '-9999px' }} type="password" name="fakepassword" tabIndex="-1" aria-hidden="true" />
+
         <label>Email</label>
         <div className="input-wrap">
           <input
@@ -37,10 +55,11 @@ export default function Login() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
+            autoComplete="off"
           />
         </div>
 
-        <label>Buat Kata Sandi</label>
+        <label>Masukan Kata Sandi</label>
         <div className="input-wrap">
           <input
             type={show ? 'text' : 'password'}
@@ -48,6 +67,7 @@ export default function Login() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
+            autoComplete="current-password"
           />
           <button type="button" className="icon-btn" onClick={() => setShow((s) => !s)} aria-label="toggle">
             {show ? (
