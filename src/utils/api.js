@@ -36,35 +36,20 @@ const authHeaders = () => {
   return h
 }
 
-export const login = (payload) => {
-  return safeFetch(`${baseUrl}/api/login`, {
+const postJson = (path, payload) =>
+  safeFetch(`${baseUrl}${path}`, {
     method: 'POST',
     headers: defaultHeaders(true),
     body: JSON.stringify(payload),
   })
-}
 
-export const register = (payload) => {
-  return safeFetch(`${baseUrl}/api/register`, {
-    method: 'POST',
-    headers: defaultHeaders(true),
-    body: JSON.stringify(payload),
-  })
-}
+const authRequest = (method, path) =>
+  safeFetch(`${baseUrl}${path}`, { method, headers: authHeaders() })
 
-export const me = () => {
-  return safeFetch(`${baseUrl}/api/me`, {
-    method: 'GET',
-    headers: authHeaders(),
-  })
-}
-
-export const logout = () => {
-  return safeFetch(`${baseUrl}/api/logout`, {
-    method: 'POST',
-    headers: authHeaders(),
-  })
-}
+export const login = (payload) => postJson('/api/login', payload)
+export const register = (payload) => postJson('/api/register', payload)
+export const me = () => authRequest('GET', '/api/me')
+export const logout = () => authRequest('POST', '/api/logout')
 
 // Auto-detect a reachable base URL from candidates.
 export const detectAndSetBase = async (candidates = []) => {
