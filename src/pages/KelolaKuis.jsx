@@ -15,7 +15,7 @@ export default function KelolaKuis() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [modalMode, setModalMode] = useState('create') // 'create' | 'edit' | 'delete'
   const [activeQuiz, setActiveQuiz] = useState(null)
-  const [formData, setFormData] = useState({ title: '', category: '', time_limit: 30, status: 'Draft', access: 'Private' })
+  const [formData, setFormData] = useState({ judul: '', kategori: '', soal_waktu: 30, status: 'Draft', akses: 'private' })
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState(null)
 
@@ -62,14 +62,14 @@ export default function KelolaKuis() {
     setActiveQuiz(quiz)
     setError(null)
     if (mode === 'create') {
-      setFormData({ title: '', category: '', time_limit: 30, status: 'Draft', access: 'Private' })
+      setFormData({ judul: '', kategori: '', soal_waktu: 30, status: 'Draft', akses: 'private' })
     } else if (mode === 'edit' && quiz) {
       setFormData({
-        title: quiz.title || quiz.name || '',
-        category: quiz.category || '',
-        time_limit: quiz.time_limit || 30,
+        judul: quiz.judul || quiz.title || quiz.name || '',
+        kategori: quiz.kategori || quiz.category || '',
+        soal_waktu: quiz.soal_waktu || quiz.time_limit || 30,
         status: (quiz.status || 'Draft').charAt(0).toUpperCase() + (quiz.status || 'draft').slice(1),
-        access: quiz.access || 'Private'
+        akses: quiz.akses || quiz.access || 'private'
       })
     }
     setIsModalOpen(true)
@@ -88,9 +88,9 @@ export default function KelolaKuis() {
     if (modalMode === 'create') {
       res = await createQuiz(payload)
     } else if (modalMode === 'edit') {
-      res = await updateQuiz(activeQuiz.id, payload)
+      res = await updateQuiz(activeQuiz.kuis_id || activeQuiz.id, payload)
     } else if (modalMode === 'delete') {
-      res = await deleteQuiz(activeQuiz.id)
+      res = await deleteQuiz(activeQuiz.kuis_id || activeQuiz.id)
     }
 
     setSubmitting(false)
@@ -115,7 +115,7 @@ export default function KelolaKuis() {
     if (filter === 'Selesai' && !isFinished) return false
 
     // Search filter
-    if (search && !(q.title || q.name || '').toLowerCase().includes(search.toLowerCase())) return false
+    if (search && !(q.judul || q.title || q.name || '').toLowerCase().includes(search.toLowerCase())) return false
 
     return true
   })
@@ -209,7 +209,7 @@ export default function KelolaKuis() {
               <h1>Kelola Kuis</h1>
               <p>Pantau, buat, dan kelola semua kuis Anda dalam satu tempat dengan mudah dan efisien.</p>
             </div>
-            <button className="kk-btn-create" onClick={() => openModal('create')}>
+            <button className="kk-btn-create" onClick={() => navigate('/buat-kuis')}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
               </svg>
@@ -268,30 +268,30 @@ export default function KelolaKuis() {
                   </tr>
                 ) : (
                   filteredQuizzes.map(q => (
-                    <tr key={q.id}>
-                      <td>
-                        <div className="kk-quiz-title">{q.title || q.name}</div>
+                    <tr key={q.kuis_id || q.id}>
+                      <td data-label="Judul Kuis">
+                        <div className="kk-quiz-title">{q.judul || q.title || q.name}</div>
                         <div className="kk-quiz-meta">
-                          {q.question_count || 0} Pertanyaan • {q.time_limit || 0} Menit
+                          {q.jumlah_soal || q.question_count || 0} Pertanyaan • {q.soal_waktu || q.time_limit || 0} Menit
                         </div>
                       </td>
-                      <td>{renderStatusBadge(q)}</td>
-                      <td>
-                        <span className="kk-access">{q.access || 'Public'}</span>
+                      <td data-label="Status">{renderStatusBadge(q)}</td>
+                      <td data-label="Akses">
+                        <span className="kk-access">{q.akses || q.access || 'publik'}</span>
                       </td>
-                      <td>
-                        {q.code ? <span className="kk-code">{q.code}</span> : <span className="kk-code-empty">—</span>}
+                      <td data-label="Kode">
+                        {q.kode_kuis || q.code ? <span className="kk-code">{q.kode_kuis || q.code}</span> : <span className="kk-code-empty">—</span>}
                       </td>
-                      <td className="kk-date">{formatDate(q.created_at)}</td>
-                      <td className="kk-action-cell" ref={openMenuId === q.id ? menuRef : null}>
-                        <button className="kk-more-btn" onClick={(e) => { e.stopPropagation(); setOpenMenuId(openMenuId === q.id ? null : q.id) }}>⋮</button>
-                        {openMenuId === q.id && (
+                      <td className="kk-date" data-label="Tanggal Dibuat">{formatDate(q.tgl_dibuat || q.created_at)}</td>
+                      <td className="kk-action-cell" ref={openMenuId === (q.kuis_id || q.id) ? menuRef : null}>
+                        <button className="kk-more-btn" onClick={(e) => { e.stopPropagation(); setOpenMenuId(openMenuId === (q.kuis_id || q.id) ? null : (q.kuis_id || q.id)) }}>⋮</button>
+                        {openMenuId === (q.kuis_id || q.id) && (
                           <div className="kk-dropdown">
                             <button className="kk-dropdown-item" onClick={() => openModal('edit', q)}>
                               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
                               Edit Kuis
                             </button>
-                            <button className="kk-dropdown-item" onClick={() => navigate(`/kuis/${q.id}`)}>
+                            <button className="kk-dropdown-item" onClick={() => navigate(`/kuis/${q.kuis_id || q.id}`)}>
                               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" /><circle cx="12" cy="12" r="3" /></svg>
                               Detail Kuis
                             </button>
@@ -322,7 +322,7 @@ export default function KelolaKuis() {
             {modalMode === 'delete' ? (
               <>
                 <h2>Hapus Kuis</h2>
-                <p className="sub">Apakah Anda yakin ingin menghapus kuis <strong>{activeQuiz?.title || activeQuiz?.name}</strong>? Tindakan ini tidak dapat dibatalkan.</p>
+                <p className="sub">Apakah Anda yakin ingin menghapus kuis <strong>{activeQuiz?.judul || activeQuiz?.title || activeQuiz?.name}</strong>? Tindakan ini tidak dapat dibatalkan.</p>
                 {error && <div className="kk-form-error">{error}</div>}
                 <div className="kk-modal-actions">
                   <button className="kk-btn-cancel" onClick={() => setIsModalOpen(false)} disabled={submitting}>Batal</button>
@@ -340,17 +340,17 @@ export default function KelolaKuis() {
 
                 <div className="kk-form-group">
                   <label>Judul Kuis</label>
-                  <input type="text" required placeholder="Contoh: Ujian Tengah Semester..." value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} />
+                  <input type="text" required placeholder="Contoh: Ujian Tengah Semester..." value={formData.judul} onChange={e => setFormData({...formData, judul: e.target.value})} />
                 </div>
 
                 <div className="kk-form-row">
                   <div className="kk-form-group">
                     <label>Kategori</label>
-                    <input type="text" placeholder="Contoh: Matematika" value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} />
+                    <input type="text" placeholder="Contoh: Matematika" value={formData.kategori} onChange={e => setFormData({...formData, kategori: e.target.value})} />
                   </div>
                   <div className="kk-form-group">
                     <label>Batas Waktu (Menit)</label>
-                    <input type="number" min="1" required value={formData.time_limit} onChange={e => setFormData({...formData, time_limit: parseInt(e.target.value) || 0})} />
+                    <input type="number" min="1" required value={formData.soal_waktu} onChange={e => setFormData({...formData, soal_waktu: parseInt(e.target.value) || 0})} />
                   </div>
                 </div>
 
@@ -365,9 +365,9 @@ export default function KelolaKuis() {
                   </div>
                   <div className="kk-form-group">
                     <label>Akses</label>
-                    <select value={formData.access} onChange={e => setFormData({...formData, access: e.target.value})}>
-                      <option value="Private">Private</option>
-                      <option value="Public">Public</option>
+                    <select value={formData.akses} onChange={e => setFormData({...formData, akses: e.target.value})}>
+                      <option value="private">Private</option>
+                      <option value="publik">Publik</option>
                     </select>
                   </div>
                 </div>

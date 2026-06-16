@@ -38,7 +38,8 @@ export default function Dashboard() {
       const qRes = await getQuizzes()
       if (!mounted) return
       if (qRes.ok) {
-        setQuizzes(qRes.data?.data || qRes.data || [])
+        const rawData = qRes.data?.data || qRes.data || []
+        setQuizzes(Array.isArray(rawData) ? rawData : [])
       }
 
       setLoading(false)
@@ -192,7 +193,7 @@ export default function Dashboard() {
                 </svg>
                 Kelola Semua Kuis
               </button>
-              <button className="btn-buat">
+              <button className="btn-buat" onClick={() => navigate('/buat-kuis')}>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
                 </svg>
@@ -252,14 +253,14 @@ export default function Dashboard() {
               {!loading && quizzes.map((q) => {
                 const isActive = q.status === 'active' || q.is_active
                 return (
-                  <div key={q.id} className="quiz-row-item">
+                  <div key={q.kuis_id || q.id} className="quiz-row-item">
                     <div className="quiz-left-content">
                       <div className="quiz-icon-circle">
-                        {renderCategoryIcon(q.category || '')}
+                        {renderCategoryIcon(q.kategori || q.category || '')}
                       </div>
                       <div className="quiz-title-meta">
-                        <span className="quiz-row-title">{q.title || q.name}</span>
-                        <span className="quiz-row-meta">{formatDate(q.created_at)}</span>
+                        <span className="quiz-row-title">{q.judul || q.title || q.name}</span>
+                        <span className="quiz-row-meta">{formatDate(q.tgl_dibuat || q.created_at)}</span>
                       </div>
                     </div>
                     <div className={`badge-status ${isActive ? 'active' : 'finished'}`}>
