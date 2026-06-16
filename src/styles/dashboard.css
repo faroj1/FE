@@ -431,23 +431,76 @@
     width: 100%;
     border-right: none;
     border-bottom: 1px solid #e2e8f0;
-    padding: 24px;
+    padding: 20px 24px;
+  }
+  .dashboard-logo {
+    margin-bottom: 16px;
+    text-align: center;
   }
   .dashboard-nav {
     flex-direction: row;
     flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+  }
+  .dashboard-nav-item {
+    width: auto;
+    padding: 8px 16px;
+    font-size: 14px;
   }
   .sidebar-footer {
     display: none;
   }
+  .dashboard-header-row {
+    padding: 16px 24px 8px;
+  }
   .dashboard-container {
-    padding: 24px;
+    padding: 16px 24px;
   }
   .dashboard-hero {
     flex-direction: column;
-    align-items: flex-start;
+    align-items: stretch;
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  .dashboard-title-section h1 {
+    font-size: 28px;
+    letter-spacing: -0.5px;
+  }
+  .dashboard-title-section p {
+    font-size: 14px;
+  }
+  .dashboard-actions-group {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  .btn-buat, .btn-kelola {
+    justify-content: center;
+    width: 100%;
+    padding: 10px 16px;
   }
   .cards-grid {
     grid-template-columns: 1fr;
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  .stat-card {
+    padding: 20px;
+  }
+  .stat-icon-wrapper {
+    margin-bottom: 12px;
+  }
+  .stat-value {
+    font-size: 32px;
+  }
+  .quiz-row-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 16px;
+  }
+  .badge-status {
+    align-self: flex-start;
   }
 }

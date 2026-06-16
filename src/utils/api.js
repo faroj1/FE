@@ -54,51 +54,59 @@ export const logoutApi = () =>
     headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', ...authHeader() },
   }).then(handleResponse).catch(handleNetworkError)
 
-/** GET /api/quizzes — public quiz list */
+/** GET /api/kuis — public quiz list */
 export const getQuizzes = () =>
-  fetch(`${baseUrl}/api/quizzes`, {
+  fetch(`${baseUrl}/api/kuis`, {
     headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', ...authHeader() },
   }).then(handleResponse).catch(handleNetworkError)
 
 // ─── Kelola Kuis (Teacher Quiz Management) ───────────────────────────────────
 
-/** GET /api/quizzes — teacher's own quizzes (same endpoint, filtered by auth) */
+/** GET /api/kuis — teacher's own quizzes (same endpoint, filtered by auth) */
 export const getMyQuizzes = () =>
-  fetch(`${baseUrl}/api/quizzes`, {
+  fetch(`${baseUrl}/api/kuis`, {
     headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', ...authHeader() },
   }).then(handleResponse).catch(handleNetworkError)
 
-/** GET /api/quizzes/{id} */
+/** GET /api/kuis/{id} */
 export const getQuizDetail = (id) =>
-  fetch(`${baseUrl}/api/quizzes/${id}`, {
+  fetch(`${baseUrl}/api/kuis/${id}`, {
     headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', ...authHeader() },
   }).then(handleResponse).catch(handleNetworkError)
 
-/** POST /api/quizzes — create new quiz */
+/** POST /api/kuis — create new quiz */
 export const createQuiz = (payload) =>
-  fetch(`${baseUrl}/api/quizzes`, {
+  fetch(`${baseUrl}/api/kuis`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', ...authHeader() },
     body: JSON.stringify(payload),
   }).then(handleResponse).catch(handleNetworkError)
 
-/** PUT /api/quizzes/{id} — update quiz */
+/** POST /api/soal — create a question for a quiz */
+export const createSoal = (payload) =>
+  fetch(`${baseUrl}/api/soal`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', ...authHeader() },
+    body: JSON.stringify(payload),
+  }).then(handleResponse).catch(handleNetworkError)
+
+/** PUT /api/kuis/{id} — update quiz */
 export const updateQuiz = (id, payload) =>
-  fetch(`${baseUrl}/api/quizzes/${id}`, {
+  fetch(`${baseUrl}/api/kuis/${id}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', ...authHeader() },
     body: JSON.stringify(payload),
   }).then(handleResponse).catch(handleNetworkError)
 
-/** DELETE /api/quizzes/{id} */
+/** DELETE /api/kuis/{id} */
 export const deleteQuiz = (id) =>
-  fetch(`${baseUrl}/api/quizzes/${id}`, {
+  fetch(`${baseUrl}/api/kuis/${id}`, {
     method: 'DELETE',
     headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', ...authHeader() },
   }).then(handleResponse).catch(handleNetworkError)
 
-/** GET /api/quizzes/{id}/results */
+/** GET /api/kuis/{id}/results */
 export const getQuizResults = (id) =>
-  fetch(`${baseUrl}/api/quizzes/${id}/results`, {
+  fetch(`${baseUrl}/api/kuis/${id}/results`, {
     headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', ...authHeader() },
   }).then(handleResponse).catch(handleNetworkError)

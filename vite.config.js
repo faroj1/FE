@@ -7,10 +7,25 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'http://192.168.1.8:8000',
+        target: 'https://going-slacking-backhand.ngrok-free.dev',
         changeOrigin: true,
         secure: false,
-        ws: true
+        ws: true,
+        headers: {
+          'ngrok-skip-browser-warning': 'true'
+        },
+        configure: (proxy, _options) => {
+          proxy.on('error', (err, _req, _res) => {
+            console.error('[Vite Proxy Error]', err);
+          });
+          proxy.on('proxyReq', (proxyReq, req, _res) => {
+            proxyReq.setHeader('ngrok-skip-browser-warning', 'true');
+            console.log('[Vite Proxy Request]', req.method, req.url);
+          });
+          proxy.on('proxyRes', (proxyRes, req, _res) => {
+            console.log('[Vite Proxy Response]', proxyRes.statusCode, req.url);
+          });
+        }
       }
     }
   }

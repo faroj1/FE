@@ -56,4 +56,7 @@
 
 @media (max-width:900px) {
   .steps-grid, .categories-grid { flex-direction:column }
+  .home-hero h1 { font-size: 32px; line-height: 1.15; }
+  .home-hero .lead { font-size: 14px; }
+  .hero-card { padding: 18px; }
 }
