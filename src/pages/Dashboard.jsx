@@ -57,8 +57,8 @@ export default function Dashboard() {
 
   // Stats from API data
   const totalCount = quizzes.length
-  const activeCount = quizzes.filter(q => q.status === 'active' || q.is_active).length
-  const finishedCount = quizzes.filter(q => q.status === 'finished' || q.is_finished || q.completed).length
+  const activeCount = quizzes.filter(q => q.status === 'active' || q.status === 'aktif' || q.is_active).length
+  const finishedCount = quizzes.filter(q => q.status === 'finished' || q.status === 'selesai' || q.is_finished || q.completed).length
 
   // Category icon renderer
   const renderCategoryIcon = (category = '') => {
@@ -251,7 +251,7 @@ export default function Dashboard() {
                 </div>
               )}
               {!loading && quizzes.map((q) => {
-                const isActive = q.status === 'active' || q.is_active
+                const isActive = q.status === 'active' || q.status === 'aktif' || q.is_active
                 return (
                   <div key={q.kuis_id || q.id} className="quiz-row-item">
                     <div className="quiz-left-content">

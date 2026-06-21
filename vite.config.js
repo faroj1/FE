@@ -1,32 +1,36 @@
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 
 // https://vite.dev/config/
-export default defineConfig({
-  plugins: [react()],
-  server: {
-    proxy: {
-      '/api': {
-        target: 'https://going-slacking-backhand.ngrok-free.dev',
-        changeOrigin: true,
-        secure: false,
-        ws: true,
-        headers: {
-          'ngrok-skip-browser-warning': 'true'
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, process.cwd(), '')
+  const apiTarget = env.VITE_API_BASE || 'https://going-slacking-backhand.ngrok-free.dev'
+
+  return {
+    plugins: [react()],
+    server: {
+      proxy: {
+        '/api': {
+          target: apiTarget,
+          changeOrigin: true,
+          secure: true,
+          headers: {
+            'ngrok-skip-browser-warning': 'true',
+          },
+          configure: (proxy) => {
+            proxy.on('error', (err) => {
+              console.error('[Vite Proxy Error]', err.message)
+            })
+            proxy.on('proxyReq', (proxyReq, req) => {
+              proxyReq.setHeader('ngrok-skip-browser-warning', 'true')
+              console.log('[Proxy →]', req.method, req.url, '→', apiTarget)
+            })
+            proxy.on('proxyRes', (proxyRes, req) => {
+              console.log('[Proxy ←]', proxyRes.statusCode, req.url)
+            })
+          },
         },
-        configure: (proxy, _options) => {
-          proxy.on('error', (err, _req, _res) => {
-            console.error('[Vite Proxy Error]', err);
-          });
-          proxy.on('proxyReq', (proxyReq, req, _res) => {
-            proxyReq.setHeader('ngrok-skip-browser-warning', 'true');
-            console.log('[Vite Proxy Request]', req.method, req.url);
-          });
-          proxy.on('proxyRes', (proxyRes, req, _res) => {
-            console.log('[Vite Proxy Response]', proxyRes.statusCode, req.url);
-          });
-        }
-      }
-    }
+      },
+    },
   }
 })
