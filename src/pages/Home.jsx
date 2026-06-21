@@ -1,7 +1,29 @@
+import { useState } from 'react'
 import '../styles/home.css'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 
 export default function Home() {
+  const [nama, setNama] = useState('')
+  const [kode, setKode] = useState('')
+  const [error, setError] = useState(null)
+  const navigate = useNavigate()
+
+  const handleJoinQuiz = (e) => {
+    e.preventDefault()
+    setError(null)
+
+    if (!nama.trim()) return setError('Silakan masukkan nama Anda.')
+    if (!kode.trim()) return setError('Silakan masukkan kode kuis.')
+
+    // Save participant name to sessionStorage
+    sessionStorage.setItem('quiz_participant_name', nama.trim())
+    
+    // Navigate to quiz page with kode
+    navigate(`/kerjakan-kuis/${kode.trim().toUpperCase()}`, {
+      state: { nama: nama.trim() }
+    })
+  }
+
   return (
     <div className="home-root">
       <div className="home-hero">
@@ -17,19 +39,31 @@ export default function Home() {
           </div>
 
           <div className="hero-card">
-            <div className="hero-form">
+            <form className="hero-form" onSubmit={handleJoinQuiz}>
               <div className="field">
                 <label>Nama Anda</label>
-                <input placeholder="Contoh: Petualang Hebat" />
+                <input 
+                  placeholder="Contoh: Petualang Hebat" 
+                  value={nama} 
+                  onChange={(e) => setNama(e.target.value)}
+                />
               </div>
 
               <div className="field">
                 <label>Kode Kuis</label>
-                <input placeholder="000 - 000" />
+                <input 
+                  placeholder="Contoh: A1B2C3" 
+                  value={kode} 
+                  onChange={(e) => setKode(e.target.value.toUpperCase())}
+                  maxLength={10}
+                  style={{ textTransform: 'uppercase', letterSpacing: '2px', fontWeight: 700 }}
+                />
               </div>
 
-              <button className="primary">Gabung Kuis!</button>
-            </div>
+              {error && <div style={{ color: '#dc2626', fontSize: 13, fontWeight: 600, marginTop: -4 }}>{error}</div>}
+
+              <button type="submit" className="primary">Gabung Kuis!</button>
+            </form>
           </div>
 
           <div style={{ textAlign: 'center', marginTop: 22 }}>
@@ -84,21 +118,21 @@ export default function Home() {
               <div className="cat-icon">🔬</div>
               <h4>Sains</h4>
               <p>Jelajahi misteri alam semesta, biologi, dan fisika yang menakjubkan.</p>
-              <a className="cat-link" href="#">Lihat Kuis →</a>
+              <Link className="cat-link" to="/daftar-kuis">Lihat Kuis →</Link>
             </div>
 
             <div className="cat-card">
               <div className="cat-icon">➗</div>
               <h4>Matematika</h4>
               <p>Asah logika dan kemampuan berhitungmu dengan tantangan angka.</p>
-              <a className="cat-link" href="#">Lihat Kuis →</a>
+              <Link className="cat-link" to="/daftar-kuis">Lihat Kuis →</Link>
             </div>
 
             <div className="cat-card">
               <div className="cat-icon">🌐</div>
               <h4>Bahasa</h4>
               <p>Tingkatkan kemampuan kosakata dan tata bahasamu di sini.</p>
-              <a className="cat-link" href="#">Lihat Kuis →</a>
+              <Link className="cat-link" to="/daftar-kuis">Lihat Kuis →</Link>
             </div>
           </div>
         </div>

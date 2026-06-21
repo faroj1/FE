@@ -1,53 +1,68 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { getQuizzes, getApiBase } from '../utils/api'
+import { isAuthenticated } from '../utils/auth'
 import '../styles/quizlist.css'
 
 import coverAgama from '../assets/cover_agama.png'
 import coverBahasa from '../assets/cover_bahasa.png'
 import coverMatematika from '../assets/cover_matematika.png'
 
+// Map category to cover image
+const getCoverByCategory = (cat) => {
+  const c = (cat || '').toLowerCase()
+  if (c.includes('agama')) return coverAgama
+  if (c.includes('bahasa')) return coverBahasa
+  if (c.includes('matematika') || c.includes('math')) return coverMatematika
+  return coverAgama
+}
+
 export default function QuizList({ searchTerm }) {
   const [quizzes, setQuizzes] = useState([])
   const [filteredQuizzes, setFilteredQuizzes] = useState([])
   const [activeFilter, setActiveFilter] = useState('Semua')
   const [loading, setLoading] = useState(true)
+  const navigate = useNavigate()
 
   // Fetch quizzes from backend
   useEffect(() => {
     const fetchQuizzes = async () => {
       try {
         const result = await getQuizzes()
-        if (result.ok && result.data && Array.isArray(result.data) && result.data.length > 0) {
+        const rawData = result.data?.data || result.data || []
+        const dataArr = Array.isArray(rawData) ? rawData : []
+
+        if (result.ok && dataArr.length > 0) {
           const apiBase = getApiBase()
           
-          // Helper to get full image URL
           const getFullImageUrl = (img) => {
-            if (!img) return coverAgama
-            if (img.startsWith('http://') || img.startsWith('https://') || img.startsWith('data:')) {
-              return img
-            }
-            if (img.startsWith('/src/assets/') || img.startsWith('src/assets/')) {
-              return img
-            }
+            if (!img) return null
+            if (img.startsWith('http://') || img.startsWith('https://') || img.startsWith('data:')) return img
             return apiBase ? `${apiBase}/${img.replace(/^\//, '')}` : img
           }
 
-          // Map backend data dynamically supporting camelCase and snake_case
-          const mapped = result.data.map(item => ({
-            id: item.id,
-            title: item.title,
-            description: item.description,
-            image: getFullImageUrl(item.image || item.cover_image || item.image_url),
-            questions: item.questions ?? item.questions_count ?? 20,
-            timeLimit: item.timeLimit ?? item.time_limit ?? '15 Menit',
-            targetClass: item.targetClass ?? item.target_class ?? item.class ?? 'Kelas 10',
-            category: item.category ?? 'Umum'
-          }))
+          // Map backend Indonesian field names to display-friendly format
+          // Filter only public quizzes (akses === 'publik')
+          const mapped = dataArr
+            .filter(item => (item.akses || item.access || '').toLowerCase() === 'publik')
+            .map(item => ({
+              id: item.kuis_id || item.id,
+              kode_kuis: item.kode_kuis || '',
+              title: item.judul || item.title || item.name || 'Kuis Tanpa Judul',
+              description: item.deskripsi || item.description || 'Uji pengetahuanmu dengan kuis ini!',
+              image: getFullImageUrl(item.image || item.cover_image) || getCoverByCategory(item.kategori || item.category),
+              questions: (item.jumlah_soal || item.questions_count || item.questions) ?? 0,
+              timeLimit: `${item.soal_waktu || item.time_limit || 15} Menit`,
+              targetClass: item.kelas || item.targetClass || item.target_class || 'Umum',
+              category: item.kategori || item.category || 'Umum',
+              status: item.status || 'Draft',
+            }))
 
           setQuizzes(mapped)
           setFilteredQuizzes(mapped)
         } else {
-          throw new Error('No data or failed response')
+          setQuizzes([])
+          setFilteredQuizzes([])
         }
       } catch (error) {
         console.error('Error fetching quizzes:', error)
@@ -65,28 +80,39 @@ export default function QuizList({ searchTerm }) {
   useEffect(() => {
     let filtered = quizzes
     
-    // Filter by category
     if (activeFilter !== 'Semua') {
-      filtered = filtered.filter(quiz => quiz.category === activeFilter)
+      filtered = filtered.filter(quiz => (quiz.category || '').toLowerCase().includes(activeFilter.toLowerCase()))
     }
     
-    // Filter by search term
     if (searchTerm) {
       const searchLower = searchTerm.toLowerCase()
       filtered = filtered.filter(quiz =>
-        quiz.title.toLowerCase().includes(searchLower) ||
-        quiz.description.toLowerCase().includes(searchLower)
+        (quiz.title || '').toLowerCase().includes(searchLower) ||
+        (quiz.description || '').toLowerCase().includes(searchLower)
       )
     }
     
     setFilteredQuizzes(filtered)
   }, [activeFilter, searchTerm, quizzes])
 
-  const handleStartQuiz = (quizId) => {
-    console.log('Starting quiz:', quizId)
-    // Implement quiz start or navigation logic here
-    alert(`Memulai kuis dengan ID: ${quizId}`)
+  const handleStartQuiz = (quiz) => {
+    if (!quiz.kode_kuis) {
+      alert('Kuis ini belum memiliki kode. Silakan hubungi guru pembuat kuis.')
+      return
+    }
+    // Save participant name if not set
+    if (!sessionStorage.getItem('quiz_participant_name')) {
+      const nama = prompt('Masukkan nama Anda untuk mulai kuis:')
+      if (!nama) return
+      sessionStorage.setItem('quiz_participant_name', nama.trim())
+    }
+    navigate(`/kerjakan-kuis/${quiz.kode_kuis}`, {
+      state: { nama: sessionStorage.getItem('quiz_participant_name') }
+    })
   }
+
+  // Extract unique categories for filter tabs
+  const categories = ['Semua', ...new Set(quizzes.map(q => q.category).filter(Boolean))]
 
   return (
     <div className="quizlist-root">
@@ -106,13 +132,13 @@ export default function QuizList({ searchTerm }) {
       <div className="quizlist-container">
         <div className="quizlist-header-row">
           <div className="section-title-wrapper">
-            <h2 className="section-main-title">Daftar Kuis</h2>
+            <h2 className="section-main-title">Daftar Kuis Publik</h2>
             <p className="section-subtitle">Telusuri berbagai kuis menarik dan uji pengetahuanmu sekarang!</p>
           </div>
 
-          {/* Filter Tabs */}
+          {/* Filter Tabs — dynamic from actual data */}
           <div className="filter-tabs">
-            {['Semua', 'Agama', 'Bahasa', 'Matematika'].map(filter => (
+            {categories.map(filter => (
               <button
                 key={filter}
                 className={`filter-tab ${activeFilter === filter ? 'active' : ''}`}
@@ -131,7 +157,7 @@ export default function QuizList({ searchTerm }) {
           </div>
         ) : filteredQuizzes.length === 0 ? (
           <div className="empty-state">
-            <p>Tidak ada kuis yang ditemukan.</p>
+            <p>{isAuthenticated() ? 'Belum ada kuis publik yang tersedia.' : 'Silakan login untuk melihat daftar kuis.'}</p>
           </div>
         ) : (
           <div className="quiz-grid">
@@ -139,8 +165,8 @@ export default function QuizList({ searchTerm }) {
               <div key={quiz.id} className="quiz-card">
                 <div className="quiz-image">
                   <img src={quiz.image} alt={quiz.title} />
-                  <div className={`quiz-category-badge badge-${quiz.category.toLowerCase()}`}>
-                    {quiz.category.toUpperCase()}
+                  <div className={`quiz-category-badge badge-${(quiz.category || 'umum').toLowerCase()}`}>
+                    {(quiz.category || 'UMUM').toUpperCase()}
                   </div>
                 </div>
                 <div className="quiz-content">
@@ -165,9 +191,9 @@ export default function QuizList({ searchTerm }) {
                     
                     <button 
                       className="start-btn"
-                      onClick={() => handleStartQuiz(quiz.id)}
+                      onClick={() => handleStartQuiz(quiz)}
                     >
-                      Mulai
+                      Mulai Kuis
                     </button>
                   </div>
                 </div>
@@ -175,22 +201,6 @@ export default function QuizList({ searchTerm }) {
             ))}
           </div>
         )}
-
-        {/* Pagination Arrows */}
-        <div className="pagination-wrapper">
-          <div className="pagination-arrows">
-            <button className="arrow-btn" aria-label="Sebelumnya">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="15 18 9 12 15 6"></polyline>
-              </svg>
-            </button>
-            <button className="arrow-btn" aria-label="Selanjutnya">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="9 18 15 12 9 6"></polyline>
-              </svg>
-            </button>
-          </div>
-        </div>
       </div>
     </div>
   )

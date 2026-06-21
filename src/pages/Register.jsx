@@ -18,7 +18,9 @@ export default function Register() {
     setError(null)
     if (password !== confirmPassword) return setError('Password tidak cocok')
     setLoading(true)
-    const res = await register({ email, password, password_confirmation: confirmPassword })
+    // Derive name from email (part before @) since backend requires it
+    const derivedName = email.split('@')[0] || email
+    const res = await register({ name: derivedName, email, password, password_confirmation: confirmPassword })
     setLoading(false)
 
     if (res.ok) {

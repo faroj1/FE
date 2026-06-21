@@ -7,6 +7,9 @@ import QuizList from './pages/QuizList'
 import Dashboard from './pages/Dashboard'
 import KelolaKuis from './pages/KelolaKuis'
 import BuatKuis from './pages/BuatKuis'
+import KerjakanKuis from './pages/KerjakanKuis'
+import DetailKuis from './pages/DetailKuis'
+import HasilKuis from './pages/HasilKuis'
 import ProtectedRoute from './components/ProtectedRoute'
 
 function App() {
@@ -113,6 +116,7 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/daftar-kuis" element={<QuizList searchTerm={searchTerm} />} />
+          <Route path="/kerjakan-kuis/:kodeKuis" element={<KerjakanKuis />} />
           <Route
             path="/dashboard"
             element={
@@ -126,6 +130,22 @@ function App() {
             element={
               <ProtectedRoute>
                 <KelolaKuis />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/kelola-kuis/detail/:id"
+            element={
+              <ProtectedRoute>
+                <DetailKuis />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/kelola-kuis/hasil/:id"
+            element={
+              <ProtectedRoute>
+                <HasilKuis />
               </ProtectedRoute>
             }
           />

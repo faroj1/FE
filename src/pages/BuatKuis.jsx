@@ -154,10 +154,11 @@ export default function BuatKuis() {
       judul: info.title,
       deskripsi: info.description,
       kategori: info.category,
+      mata_pelajaran: info.category,
       kelas: info.class,
       soal_waktu: Number(info.time_limit),
       akses: access,
-      status: 'Draft',
+      status: 'draft',
     }
 
     const res = await createQuiz(kuisPayload)
@@ -168,31 +169,40 @@ export default function BuatKuis() {
       return
     }
 
-    const kuisId = res.data?.data?.kuis_id
+    console.log('[BuatKuis] createQuiz response:', res.data)
+    const kuisId = res.data?.data?.kuis_id || res.data?.data?.id || res.data?.kuis_id || res.data?.id
 
     // Step 2: Create each question via POST /api/soal
     if (kuisId) {
       for (const q of questions) {
         // Find the correct answer letter
         const correctAnswer = q.answers.find(a => a.is_correct)
-        const jawaban_benar = correctAnswer ? correctAnswer.letter : 'A'
 
         const soalPayload = {
-          kuis_id: kuisId,
+          kuis_id: Number(kuisId),
           soal_soal: q.text,
           jawaban_a: q.answers.find(a => a.letter === 'A')?.text || '',
           jawaban_b: q.answers.find(a => a.letter === 'B')?.text || '',
           jawaban_c: q.answers.find(a => a.letter === 'C')?.text || '',
           jawaban_d: q.answers.find(a => a.letter === 'D')?.text || '',
-          jawaban_benar: jawaban_benar,
+          jawaban_benar: (correctAnswer?.letter || 'A').toLowerCase(),
           bobot_poin: Number(q.bobot),
+          poin: Number(q.bobot),
+          tipe_soal: 'pilihan_ganda',
         }
 
         const soalRes = await createSoal(soalPayload)
         if (!soalRes.ok) {
           console.warn('[BuatKuis] Gagal menyimpan soal:', soalRes.data?.message)
+          setError(`Kuis berhasil dibuat tetapi gagal menyimpan soal: ${soalRes.data?.message || 'Error tidak diketahui'} (Kuis ID parsed: ${kuisId}, Response API: ${JSON.stringify(res.data)})`)
+          setSubmitting(false)
+          return
         }
       }
+    } else {
+      setError(`Gagal membuat kuis: ID kuis tidak dikembalikan oleh server. Response API: ${JSON.stringify(res.data)}`)
+      setSubmitting(false)
+      return
     }
 
     setSubmitting(false)
