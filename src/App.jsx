@@ -10,6 +10,7 @@ import BuatKuis from './pages/BuatKuis'
 import KerjakanKuis from './pages/KerjakanKuis'
 import DetailKuis from './pages/DetailKuis'
 import HasilKuis from './pages/HasilKuis'
+import Profil from './pages/Profil'
 import ProtectedRoute from './components/ProtectedRoute'
 
 function App() {
@@ -20,7 +21,7 @@ function App() {
   // Determine active menu item
   const isBerandaActive = location.pathname === '/'
   const isDaftarKuisActive = location.pathname === '/daftar-kuis'
-  const isDashboard = location.pathname.startsWith('/dashboard') || location.pathname.startsWith('/kelola-kuis') || location.pathname.startsWith('/buat-kuis')
+  const isDashboard = location.pathname.startsWith('/dashboard') || location.pathname.startsWith('/kelola-kuis') || location.pathname.startsWith('/buat-kuis') || location.pathname.startsWith('/profil')
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', fontFamily: "'Inter', sans-serif" }}>
@@ -154,6 +155,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <BuatKuis />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/profil"
+            element={
+              <ProtectedRoute>
+                <Profil />
               </ProtectedRoute>
             }
           />
