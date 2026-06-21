@@ -117,6 +117,7 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/daftar-kuis" element={<QuizList searchTerm={searchTerm} />} />
+          <Route path="/kerjakan-kuis/publik/:id" element={<KerjakanKuis />} />
           <Route path="/kerjakan-kuis/:kodeKuis" element={<KerjakanKuis />} />
           <Route
             path="/dashboard"

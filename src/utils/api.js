@@ -71,11 +71,26 @@ export const logoutApi = () =>
 
 // ─── Kuis (Quiz) ──────────────────────────────────────────────────────────────
 
-/** GET /api/kuis — public quiz list (no auth required) */
+/** GET /api/kuis/publik — public quiz list (no auth required) */
 export const getPublicQuizzes = () =>
-  fetch(`${baseUrl}/api/kuis`, {
+  fetch(`${baseUrl}/api/kuis/publik`, {
     headers: commonHeaders(),
   }).then(handleResponse).catch(handleNetworkError)
+
+/** GET /api/kuis/publik/{id} — public quiz detail and questions (no auth required) */
+export const getPublicQuizDetail = (id) =>
+  fetch(`${baseUrl}/api/kuis/publik/${id}`, {
+    headers: commonHeaders(),
+  }).then(handleResponse).catch(handleNetworkError)
+
+/** POST /api/kuis/join — join private quiz via code (no auth required) */
+export const joinQuizByCode = (kodeKuis) =>
+  fetch(`${baseUrl}/api/kuis/join`, {
+    method: 'POST',
+    headers: commonHeaders(),
+    body: JSON.stringify({ kode_kuis: kodeKuis }),
+  }).then(handleResponse).catch(handleNetworkError)
+
 
 /** GET /api/kuis — public quiz list */
 export const getQuizzes = () =>

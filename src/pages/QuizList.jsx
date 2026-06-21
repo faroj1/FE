@@ -97,10 +97,6 @@ export default function QuizList({ searchTerm }) {
 
   // Open modal for a selected quiz
   const openModal = (quiz) => {
-    if (!quiz.kode_kuis) {
-      alert('Kuis ini belum memiliki kode akses.')
-      return
-    }
     // Pre-fill if name already saved
     const savedName = sessionStorage.getItem('quiz_participant_name') || ''
     setNama(savedName)
@@ -120,9 +116,18 @@ export default function QuizList({ searchTerm }) {
       return
     }
     sessionStorage.setItem('quiz_participant_name', nama.trim())
-    navigate(`/kerjakan-kuis/${selectedQuiz.kode_kuis}`, {
-      state: { nama: nama.trim() }
-    })
+
+    // Public quiz: no kode_kuis, route by ID
+    // Private quiz: has kode_kuis, route by code
+    if (selectedQuiz.kode_kuis) {
+      navigate(`/kerjakan-kuis/${selectedQuiz.kode_kuis}`, {
+        state: { nama: nama.trim() }
+      })
+    } else {
+      navigate(`/kerjakan-kuis/publik/${selectedQuiz.id}`, {
+        state: { nama: nama.trim() }
+      })
+    }
   }
 
   // Extract unique categories for filter tabs
