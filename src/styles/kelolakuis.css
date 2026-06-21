@@ -9,6 +9,9 @@
 
 /* ─── Sidebar (shared with Dashboard) ─────────── */
 .kk-sidebar {
+  position: sticky;
+  top: 0;
+  height: 100vh;
   width: 280px;
   background: #fff;
   border-right: 1px solid #e2e8f0;

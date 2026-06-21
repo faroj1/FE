@@ -40,29 +40,31 @@ export default function Home() {
 
           <div className="hero-card">
             <form className="hero-form" onSubmit={handleJoinQuiz}>
-              <div className="field">
-                <label>Nama Anda</label>
-                <input 
-                  placeholder="Contoh: Petualang Hebat" 
-                  value={nama} 
-                  onChange={(e) => setNama(e.target.value)}
-                />
+              <div className="hero-form-fields">
+                <div className="field">
+                  <label>Nama Anda</label>
+                  <input 
+                    placeholder="Contoh: Petualang Hebat" 
+                    value={nama} 
+                    onChange={(e) => setNama(e.target.value)}
+                  />
+                </div>
+
+                <div className="field">
+                  <label>Kode Kuis</label>
+                  <input 
+                    placeholder="Contoh: A1B2C3" 
+                    value={kode} 
+                    onChange={(e) => setKode(e.target.value.toUpperCase())}
+                    maxLength={10}
+                    style={{ textTransform: 'uppercase', letterSpacing: '2px', fontWeight: 700 }}
+                  />
+                </div>
+
+                <button type="submit" className="primary">Gabung Kuis!</button>
               </div>
 
-              <div className="field">
-                <label>Kode Kuis</label>
-                <input 
-                  placeholder="Contoh: A1B2C3" 
-                  value={kode} 
-                  onChange={(e) => setKode(e.target.value.toUpperCase())}
-                  maxLength={10}
-                  style={{ textTransform: 'uppercase', letterSpacing: '2px', fontWeight: 700 }}
-                />
-              </div>
-
-              {error && <div style={{ color: '#dc2626', fontSize: 13, fontWeight: 600, marginTop: -4 }}>{error}</div>}
-
-              <button type="submit" className="primary">Gabung Kuis!</button>
+              {error && <div className="hero-form-error">{error}</div>}
             </form>
           </div>
 

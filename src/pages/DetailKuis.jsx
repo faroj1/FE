@@ -19,6 +19,7 @@ export default function DetailKuis() {
   const [error, setError] = useState(null)
   const [submitting, setSubmitting] = useState(false)
   const [openQuestionMenuId, setOpenQuestionMenuId] = useState(null)
+  const [showLogoutModal, setShowLogoutModal] = useState(false)
   const questionMenuRef = useRef(null)
 
   // Close question dropdown when clicking outside
@@ -278,7 +279,7 @@ export default function DetailKuis() {
                 <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
               </svg>Kelola Kuis
             </button>
-            <button className="dk-nav-item">
+            <button className="dk-nav-item" onClick={() => navigate('/profil')}>
               <svg className="icon-svg" viewBox="0 0 24 24" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />
               </svg>Profil
@@ -348,9 +349,9 @@ export default function DetailKuis() {
               </div>
             ) : (
               <div style={{ display: 'flex', gap: 10, flexShrink: 0 }}>
-                <button 
-                  className="dk-btn-edit-quiz" 
-                  style={{ background: '#64748b', borderColor: '#64748b' }} 
+                <button
+                  className="dk-btn-edit-quiz"
+                  style={{ background: '#64748b', borderColor: '#64748b' }}
                   onClick={() => navigate(`/kelola-kuis/detail/${id}`, { state: { quiz } })}
                 >
                   Selesai
@@ -430,16 +431,16 @@ export default function DetailKuis() {
                     </div>
                     {/* Soal action menu (only in edit mode) */}
                     {isEditMode && (
-                      <div 
-                        style={{ position: 'relative' }} 
+                      <div
+                        style={{ position: 'relative' }}
                         ref={openQuestionMenuId === (q.id || q.soal_id) ? questionMenuRef : null}
                       >
-                        <button 
+                        <button
                           type="button"
-                          className="dk-more-btn" 
-                          onClick={(e) => { 
-                            e.stopPropagation(); 
-                            setOpenQuestionMenuId(openQuestionMenuId === (q.id || q.soal_id) ? null : (q.id || q.soal_id)); 
+                          className="dk-more-btn"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setOpenQuestionMenuId(openQuestionMenuId === (q.id || q.soal_id) ? null : (q.id || q.soal_id));
                           }}
                           title="Menu aksi soal"
                         >
@@ -447,9 +448,9 @@ export default function DetailKuis() {
                         </button>
                         {openQuestionMenuId === (q.id || q.soal_id) && (
                           <div className="dk-dropdown">
-                            <button 
-                              type="button" 
-                              className="dk-dropdown-item" 
+                            <button
+                              type="button"
+                              className="dk-dropdown-item"
                               onClick={() => { setOpenQuestionMenuId(null); openEditSoal(q); }}
                             >
                               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '6px' }}>
@@ -457,9 +458,9 @@ export default function DetailKuis() {
                               </svg>
                               Edit Soal
                             </button>
-                            <button 
-                              type="button" 
-                              className="dk-dropdown-item danger" 
+                            <button
+                              type="button"
+                              className="dk-dropdown-item danger"
                               onClick={() => { setOpenQuestionMenuId(null); openDeleteSoal(q); }}
                             >
                               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '6px' }}>

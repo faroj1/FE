@@ -9,6 +9,9 @@
 
 /* ─── Sidebar (shared with KelolaKuis) ─────────── */
 .dk-sidebar {
+  position: sticky;
+  top: 0;
+  height: 100vh;
   width: 280px;
   background: #fff;
   border-right: 1px solid #e2e8f0;
@@ -438,7 +441,7 @@
 /* Responsive */
 @media (max-width: 900px) {
   .dk-root { flex-direction: column; }
-  .dk-sidebar { width: 100%; border-right: none; border-bottom: 1px solid #e2e8f0; padding: 20px 24px; }
+  .dk-sidebar { width: 100%; border-right: none; border-bottom: 1px solid #e2e8f0; padding: 20px 24px; position: relative; height: auto; }
   .dk-header-row { padding: 16px 20px 8px; }
   .dk-container { padding: 16px 20px; }
   .dk-stats-row { grid-template-columns: 1fr 1fr; }

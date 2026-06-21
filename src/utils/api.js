@@ -71,6 +71,12 @@ export const logoutApi = () =>
 
 // ─── Kuis (Quiz) ──────────────────────────────────────────────────────────────
 
+/** GET /api/kuis — public quiz list (no auth required) */
+export const getPublicQuizzes = () =>
+  fetch(`${baseUrl}/api/kuis`, {
+    headers: commonHeaders(),
+  }).then(handleResponse).catch(handleNetworkError)
+
 /** GET /api/kuis — public quiz list */
 export const getQuizzes = () =>
   fetch(`${baseUrl}/api/kuis`, {
@@ -154,3 +160,75 @@ export const deleteSoal = (id) =>
     method: 'DELETE',
     headers: { ...commonHeaders(), ...authHeader() },
   }).then(handleResponse).catch(handleNetworkError)
+
+/** PUT /api/profile with fallback to PUT /api/me */
+export const updateProfile = async (payload) => {
+  let res = await fetch(`${baseUrl}/api/profile`, {
+    method: 'PUT',
+    headers: { ...commonHeaders(), ...authHeader() },
+    body: JSON.stringify(payload),
+  }).then(handleResponse).catch(handleNetworkError)
+
+  if (!res.ok && res.status === 404) {
+    console.log('[API] PUT /api/profile got 404, falling back to PUT /api/me')
+    res = await fetch(`${baseUrl}/api/me`, {
+      method: 'PUT',
+      headers: { ...commonHeaders(), ...authHeader() },
+      body: JSON.stringify(payload),
+    }).then(handleResponse).catch(handleNetworkError)
+  }
+  return res
+}
+
+/** PUT /api/change-password with fallback to PUT /api/user/password */
+export const updatePassword = async (payload) => {
+  let res = await fetch(`${baseUrl}/api/change-password`, {
+    method: 'PUT',
+    headers: { ...commonHeaders(), ...authHeader() },
+    body: JSON.stringify(payload),
+  }).then(handleResponse).catch(handleNetworkError)
+
+  if (!res.ok && res.status === 404) {
+    console.log('[API] PUT /api/change-password got 404, falling back to PUT /api/user/password')
+    res = await fetch(`${baseUrl}/api/user/password`, {
+      method: 'PUT',
+      headers: { ...commonHeaders(), ...authHeader() },
+      body: JSON.stringify(payload),
+    }).then(handleResponse).catch(handleNetworkError)
+  }
+
+  if (!res.ok && res.status === 404) {
+    console.log('[API] PUT /api/user/password got 404, falling back to POST /api/change-password')
+    res = await fetch(`${baseUrl}/api/change-password`, {
+      method: 'POST',
+      headers: { ...commonHeaders(), ...authHeader() },
+      body: JSON.stringify(payload),
+    }).then(handleResponse).catch(handleNetworkError)
+  }
+  return res
+}
+
+/** POST /api/profile/avatar — upload user profile avatar */
+export const uploadAvatar = async (formData) => {
+  const headers = {
+    ...authHeader(),
+    'Accept': 'application/json',
+    'ngrok-skip-browser-warning': 'true',
+  }
+  let res = await fetch(`${baseUrl}/api/profile/avatar`, {
+    method: 'POST',
+    headers,
+    body: formData,
+  }).then(handleResponse).catch(handleNetworkError)
+
+  if (!res.ok && res.status === 404) {
+    console.log('[API] POST /api/profile/avatar got 404, falling back to POST /api/user/avatar')
+    res = await fetch(`${baseUrl}/api/user/avatar`, {
+      method: 'POST',
+      headers,
+      body: formData,
+    }).then(handleResponse).catch(handleNetworkError)
+  }
+  return res
+}
+

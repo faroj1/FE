@@ -8,6 +8,7 @@ export default function Dashboard() {
   const [user, setUser] = useState(() => getUser()) // init from cached JWT user
   const [quizzes, setQuizzes] = useState([])
   const [loading, setLoading] = useState(true)
+  const [showLogoutModal, setShowLogoutModal] = useState(false)
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -49,7 +50,12 @@ export default function Dashboard() {
     return () => { mounted = false }
   }, [navigate])
 
-  const handleLogout = async () => {
+  const handleLogout = () => {
+    setShowLogoutModal(true)
+  }
+
+  const confirmLogout = async () => {
+    setShowLogoutModal(false)
     await logoutApi() // invalidate on server (fire & forget)
     clearToken()      // clear JWT from localStorage
     navigate('/login', { replace: true })
@@ -122,7 +128,7 @@ export default function Dashboard() {
               </svg>
               Kelola Kuis
             </button>
-            <button className="dashboard-nav-item">
+            <button className="dashboard-nav-item" onClick={() => navigate('/profil')}>
               <svg className="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />
               </svg>
@@ -277,6 +283,26 @@ export default function Dashboard() {
           </footer>
         </div>
       </main>
+
+      {showLogoutModal && (
+        <div className="global-modal-overlay">
+          <div className="global-modal">
+            <div className="global-modal-icon warning">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                <polyline points="16 17 21 12 16 7" />
+                <line x1="21" y1="12" x2="9" y2="12" />
+              </svg>
+            </div>
+            <h2>Konfirmasi Keluar</h2>
+            <p className="sub">Apakah Anda yakin ingin keluar dari akun Anda?</p>
+            <div className="global-modal-actions">
+              <button className="global-btn-cancel" onClick={() => setShowLogoutModal(false)}>Batal</button>
+              <button className="global-btn-danger" onClick={confirmLogout}>Keluar</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
