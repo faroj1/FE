@@ -403,6 +403,8 @@
 .kk-dropdown-item:hover { background: #f8fafc; }
 .kk-dropdown-item.danger { color: #ef4444; }
 .kk-dropdown-item.danger:hover { background: #fef2f2; }
+.kk-dropdown-item.publish { color: #16a34a; }
+.kk-dropdown-item.publish:hover { background: #f0fdf4; }
 
 /* ─── Empty & Loading States ─────────────────────── */
 .kk-empty {

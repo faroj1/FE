@@ -1,13 +1,16 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate, useLocation } from 'react-router-dom'
-import { getMyQuizzes, getSoalByKuis } from '../utils/api'
-import { isAuthenticated } from '../utils/auth'
+import { getPublicQuizDetail, joinQuizByCode } from '../utils/api'
 import '../styles/kerjakankuis.css'
 
 export default function KerjakanKuis() {
-  const { kodeKuis } = useParams()
+  // Route params — one of these will be defined depending on the route
+  const { kodeKuis, id } = useParams()
   const navigate = useNavigate()
   const location = useLocation()
+
+  // Determine mode: public (/publik/:id) or private (/:kodeKuis)
+  const isPublic = Boolean(id)
 
   const [quiz, setQuiz] = useState(null)
   const [questions, setQuestions] = useState([])
@@ -22,51 +25,41 @@ export default function KerjakanKuis() {
   // Get participant name from location state or sessionStorage
   const participantName = location.state?.nama || sessionStorage.getItem('quiz_participant_name') || 'Peserta'
 
-  // Fetch quiz data by kode_kuis
+  // Fetch quiz data — no authentication required
   useEffect(() => {
-    if (!isAuthenticated()) {
-      sessionStorage.setItem('quiz_redirect', `/kerjakan-kuis/${kodeKuis}`)
-      navigate('/login', { replace: true })
-      return
-    }
-
     const loadQuiz = async () => {
       setLoading(true)
       try {
-        // Fetch all quizzes and find by kode_kuis
-        const res = await getMyQuizzes()
-        if (!res.ok) {
-          setError('Gagal memuat data kuis. Pastikan Anda sudah login.')
-          setLoading(false)
-          return
-        }
-
-        const allQuizzes = res.data?.data || res.data || []
-        const quizList = Array.isArray(allQuizzes) ? allQuizzes : []
-        const found = quizList.find(q => q.kode_kuis === kodeKuis)
-
-        if (!found) {
-          setError(`Kuis dengan kode "${kodeKuis}" tidak ditemukan.`)
-          setLoading(false)
-          return
-        }
-
-        setQuiz(found)
-        setTimeLeft((found.soal_waktu || 30) * 60)  // convert minutes to seconds
-
-        // Fetch questions
-        const kuisId = found.kuis_id || found.id
-        const soalRes = await getSoalByKuis(kuisId)
-        if (soalRes.ok) {
-          const soalData = soalRes.data?.data || soalRes.data || []
-          const soalList = Array.isArray(soalData) ? soalData : []
-          setQuestions(soalList)
-          if (soalList.length === 0) {
-            setError('Kuis ini belum memiliki soal.')
-          }
+        let res
+        if (isPublic) {
+          // Public quiz: GET /api/kuis/publik/:id
+          res = await getPublicQuizDetail(id)
         } else {
-          // If soal fetch fails (403 etc), create mock questions from quiz data
-          setError('Tidak dapat memuat soal kuis. ' + (soalRes.data?.message || ''))
+          // Private quiz: POST /api/kuis/join with kode_kuis
+          res = await joinQuizByCode(kodeKuis)
+        }
+
+        if (!res.ok) {
+          const msg = res.data?.message || (isPublic ? 'Kuis tidak ditemukan.' : 'Kode kuis tidak valid.')
+          setError(msg)
+          setLoading(false)
+          return
+        }
+
+        // Backend returns { kuis: {...}, soal: [...] } for join,
+        // or { data: { ...kuis, soal: [...] } } for publik/:id
+        const payload = res.data?.data || res.data || {}
+        const kuisData = payload.kuis || payload
+        const soalData = payload.soal || kuisData.soal || []
+
+        setQuiz(kuisData)
+        setTimeLeft((kuisData.soal_waktu || 30) * 60)
+
+        const soalList = Array.isArray(soalData) ? soalData : []
+        setQuestions(soalList)
+
+        if (soalList.length === 0) {
+          setError('Kuis ini belum memiliki soal.')
         }
       } catch (err) {
         console.error(err)
@@ -76,7 +69,7 @@ export default function KerjakanKuis() {
     }
 
     loadQuiz()
-  }, [kodeKuis, navigate])
+  }, [id, kodeKuis, isPublic])
 
   // Timer countdown
   useEffect(() => {
