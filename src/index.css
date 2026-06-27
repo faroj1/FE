@@ -252,3 +252,496 @@ code {
 .global-btn-primary:active {
   transform: translateY(0);
 }
+
+/* ─── Mobile Responsive Safety Net ─────────────────────────────────────────── */
+img,
+svg,
+video,
+canvas {
+  max-width: 100%;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  min-width: 0;
+}
+
+table {
+  max-width: 100%;
+}
+
+@media (max-width: 900px) {
+  body {
+    overflow-x: hidden;
+  }
+
+  #root {
+    text-align: left;
+  }
+
+  /* Public header in App.jsx uses inline styles, so mobile overrides need force. */
+  #root > div > header {
+    padding: 12px 16px !important;
+    gap: 12px !important;
+    flex-wrap: wrap !important;
+    align-items: flex-start !important;
+  }
+
+  #root > div > header > div {
+    width: 100% !important;
+    min-width: 0 !important;
+    flex-wrap: wrap !important;
+    justify-content: space-between !important;
+  }
+
+  #root > div > header nav {
+    gap: 14px !important;
+    overflow-x: auto !important;
+    max-width: 100% !important;
+    padding-bottom: 2px !important;
+  }
+
+  #root > div > header input {
+    font-size: 16px !important;
+  }
+
+  /* Shared authenticated layouts. */
+  .dashboard-root,
+  .kk-root,
+  .bk-root,
+  .dk-root,
+  .hk-root,
+  .profile-root,
+  .bantuan-root {
+    display: block !important;
+    min-height: 100svh;
+  }
+
+  .dashboard-sidebar,
+  .kk-sidebar,
+  .bk-sidebar,
+  .dk-sidebar,
+  .hk-sidebar,
+  .profile-sidebar,
+  .bantuan-sidebar {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 60;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    padding: 14px 16px !important;
+    border-right: none !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+    flex-direction: column !important;
+    justify-content: flex-start !important;
+  }
+
+  .dashboard-logo,
+  .kk-logo,
+  .bk-logo,
+  .dk-logo,
+  .hk-logo,
+  .profile-logo,
+  .bantuan-logo {
+    margin-bottom: 12px !important;
+    font-size: 21px !important;
+  }
+
+  .dashboard-nav,
+  .kk-nav,
+  .bk-nav,
+  .dk-nav,
+  .hk-nav,
+  .profile-nav,
+  .bantuan-nav {
+    display: flex !important;
+    flex-direction: row !important;
+    gap: 8px !important;
+    overflow-x: auto !important;
+    padding-bottom: 4px !important;
+    scrollbar-width: thin;
+  }
+
+  .dashboard-nav-item,
+  .kk-nav-item,
+  .bk-nav-item,
+  .dk-nav-item,
+  .hk-nav-item,
+  .profile-nav-item,
+  .bantuan-nav-item {
+    flex: 0 0 auto !important;
+    width: auto !important;
+    min-height: 40px !important;
+    padding: 10px 12px !important;
+    border-radius: 10px !important;
+    white-space: nowrap !important;
+    font-size: 13.5px !important;
+  }
+
+  .dashboard-nav-item svg,
+  .kk-nav-item svg,
+  .bk-nav-item svg,
+  .dk-nav-item svg,
+  .hk-nav-item svg,
+  .profile-nav-item svg,
+  .bantuan-nav-item svg {
+    width: 18px !important;
+    height: 18px !important;
+  }
+
+  .sidebar-footer,
+  .kk-sidebar-footer,
+  .bk-sidebar-footer,
+  .dk-sidebar-footer,
+  .hk-sidebar-footer,
+  .profile-sidebar-footer,
+  .bantuan-sidebar-footer {
+    display: none !important;
+  }
+
+  .dashboard-main,
+  .kk-main,
+  .bk-main,
+  .dk-main,
+  .hk-main,
+  .profile-main,
+  .bantuan-main {
+    width: 100% !important;
+    min-width: 0 !important;
+    overflow-x: hidden !important;
+  }
+
+  .dashboard-header-row,
+  .kk-header-row,
+  .bk-header-row,
+  .dk-header-row,
+  .hk-header-row,
+  .profile-header-row,
+  .bantuan-header-row {
+    padding: 14px 16px 4px !important;
+    gap: 10px !important;
+    justify-content: flex-end !important;
+  }
+
+  .dashboard-container,
+  .kk-container,
+  .bk-container,
+  .dk-container,
+  .hk-container,
+  .profile-container,
+  .bantuan-container,
+  .quizlist-container,
+  .container {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+  }
+
+  .dashboard-hero,
+  .kk-page-header,
+  .bk-page-header,
+  .dk-title-row,
+  .hk-title-row,
+  .profile-page-header,
+  .quizlist-header-row,
+  .section-header-row {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 14px !important;
+  }
+
+  .dashboard-actions-group,
+  .kk-page-header-actions,
+  .bk-bottom-bar,
+  .hk-title-row > div:last-child {
+    width: 100% !important;
+    align-items: stretch !important;
+    justify-content: stretch !important;
+  }
+
+  .dashboard-actions-group button,
+  .kk-page-header-actions button,
+  .bk-bottom-bar button,
+  .hk-btn-export {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+
+  .cards-grid,
+  .hk-stats-row,
+  .dk-stats-row,
+  .bk-row,
+  .bk-access-grid,
+  .profile-grid,
+  .profile-form-row,
+  .bantuan-cat-grid,
+  .steps-grid,
+  .categories-grid,
+  .quiz-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .stat-card,
+  .hk-stat-card,
+  .dk-stat-card,
+  .profile-card,
+  .bk-card,
+  .bk-question-card {
+    border-radius: 14px !important;
+  }
+
+  .kk-toolbar {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 12px !important;
+  }
+
+  .kk-tabs,
+  .filter-tabs {
+    overflow-x: auto !important;
+    flex-wrap: nowrap !important;
+    padding-bottom: 4px !important;
+  }
+
+  .kk-search,
+  .hk-table-search,
+  .quizlist-banner,
+  .quiz-card,
+  .quiz-content {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .kk-table-wrap,
+  .hk-table-wrap,
+  .dk-table-wrap {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .kk-table,
+  .hk-table {
+    min-width: 680px;
+  }
+
+  .hk-podium-wrap,
+  .dk-questions-card,
+  .kk-table-wrap {
+    border-radius: 16px !important;
+  }
+
+  .hk-podium-wrap {
+    padding: 20px 14px !important;
+  }
+
+  .hk-podium {
+    height: auto !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+
+  .hk-podium-column {
+    width: 100% !important;
+  }
+
+  .hk-podium-pillar {
+    display: none !important;
+  }
+
+  .hk-podium-card {
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+
+  .global-modal-overlay,
+  .kk-modal-overlay,
+  .dk-modal-overlay,
+  .profile-modal-overlay,
+  .ql-modal-overlay {
+    padding: 14px !important;
+    align-items: flex-end !important;
+  }
+
+  .global-modal,
+  .kk-modal,
+  .dk-modal,
+  .profile-modal,
+  .ql-modal {
+    width: 100% !important;
+    max-width: 100% !important;
+    max-height: calc(100svh - 28px) !important;
+    overflow-y: auto !important;
+    border-radius: 18px !important;
+    padding: 22px 18px !important;
+  }
+
+  .global-modal-actions,
+  .kk-modal-actions,
+  .dk-modal-actions,
+  .profile-modal-actions {
+    flex-direction: column-reverse !important;
+    gap: 10px !important;
+  }
+
+  .global-modal-actions button,
+  .kk-modal-actions button,
+  .dk-modal-actions button,
+  .profile-modal-actions button {
+    width: 100% !important;
+  }
+
+  .bk-submit-bar {
+    left: 0 !important;
+    padding: 12px 16px !important;
+    gap: 10px !important;
+  }
+}
+
+@media (max-width: 640px) {
+  h1 {
+    font-size: 28px !important;
+    line-height: 1.18 !important;
+    letter-spacing: 0 !important;
+  }
+
+  h2 {
+    font-size: 20px !important;
+  }
+
+  .dashboard-title-section h1,
+  .kk-page-title h1,
+  .bk-section-title,
+  .dk-quiz-title,
+  .hk-quiz-title,
+  .profile-page-header h1,
+  .section-main-title {
+    font-size: 24px !important;
+    line-height: 1.18 !important;
+    letter-spacing: 0 !important;
+  }
+
+  .quizlist-banner {
+    min-height: auto !important;
+    padding: 28px 16px !important;
+    border-radius: 0 !important;
+  }
+
+  .banner-content h1 {
+    font-size: 28px !important;
+    line-height: 1.18 !important;
+  }
+
+  .banner-content p,
+  .dashboard-title-section p,
+  .kk-page-title p,
+  .profile-page-header p,
+  .section-subtitle {
+    font-size: 14px !important;
+  }
+
+  .quiz-card {
+    min-width: 0 !important;
+  }
+
+  .quiz-footer,
+  .quiz-meta {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+
+  .start-btn,
+  .auth-btn,
+  .ql-modal-btn {
+    width: 100% !important;
+  }
+
+  .kk-quiz-topbar {
+    padding: 10px 12px !important;
+    gap: 8px !important;
+  }
+
+  .kk-quiz-topbar-title {
+    max-width: 42vw !important;
+  }
+
+  .kk-quiz-body {
+    flex-direction: column !important;
+    padding: 12px !important;
+  }
+
+  .kk-quiz-sidebar {
+    width: 100% !important;
+    order: 2;
+  }
+
+  .kk-quiz-main {
+    width: 100% !important;
+    order: 1;
+  }
+
+  .kk-quiz-question-card {
+    padding: 16px !important;
+    border-radius: 16px !important;
+  }
+
+  .kk-quiz-nav-grid {
+    grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+  }
+
+  .kk-quiz-footer {
+    flex-direction: column !important;
+    gap: 10px !important;
+  }
+
+  .kk-quiz-footer button {
+    width: 100% !important;
+  }
+
+  .kk-quiz-result-card {
+    width: 100% !important;
+    padding: 22px 16px !important;
+  }
+
+  .kk-quiz-result-stats {
+    grid-template-columns: 1fr !important;
+  }
+
+  .notif-dropdown {
+    top: 66px !important;
+  }
+
+  .notif-toast {
+    top: 66px !important;
+  }
+}
+
+@media (max-width: 420px) {
+  .dashboard-nav-item,
+  .kk-nav-item,
+  .bk-nav-item,
+  .dk-nav-item,
+  .hk-nav-item,
+  .profile-nav-item,
+  .bantuan-nav-item {
+    font-size: 12.5px !important;
+    gap: 8px !important;
+  }
+
+  .global-modal,
+  .kk-modal,
+  .dk-modal,
+  .profile-modal,
+  .ql-modal {
+    padding: 18px 14px !important;
+  }
+
+  .kk-table,
+  .hk-table {
+    min-width: 600px;
+  }
+}

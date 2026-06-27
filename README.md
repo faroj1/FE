@@ -54,4 +54,16 @@ If your frontend is served from a different origin than the backend you must eit
 
 Notes & debugging: - If DevTools shows requests to a different IP (e.g. 192.168.1.20), update your frontend `.env` or manual API override in the login page. - If `php artisan serve` binds to 127.0.0.1 even with `--host=0.0.0.0`, use a proper web server like Apache/NGINX/Laragon and create a virtual host bound to the LAN IP.
 
+## Realtime notifications with Pusher
+
+Teacher notifications are received live through Pusher private channels and are not persisted as notification history. Configure these frontend env values:
+
+```
+VITE_PUSHER_APP_KEY=your_pusher_key
+VITE_PUSHER_APP_CLUSTER=ap1
+VITE_PUSHER_AUTH_ENDPOINT=https://your-backend.test/api/broadcasting/auth
+```
+
+If `VITE_PUSHER_AUTH_ENDPOINT` is omitted, the frontend uses `${VITE_API_BASE}/api/broadcasting/auth`. The private channel name is `private-guru.{guruId}`, and the frontend listens for `PesertaSubmitKuis` and `KuisDipublikasikan` events.
+
 If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
