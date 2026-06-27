@@ -1,7 +1,8 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useParams, useNavigate, useLocation, useSearchParams } from 'react-router-dom'
-import { getMyQuizzes, getSoalByKuis, updateQuiz, deleteQuiz, updateSoal, deleteSoal, createSoal, logoutApi } from '../utils/api'
+import { getMyQuizzes, getSoalByKuis, updateQuiz, deleteQuiz, updateSoal, deleteSoal, createSoal, logoutApi, getImageUrl } from '../utils/api'
 import { clearToken, isAuthenticated } from '../utils/auth'
+import NotificationDropdown from '../components/NotificationDropdown'
 import '../styles/detailkuis.css'
 
 const ANSWER_LETTERS = ['A', 'B', 'C', 'D']
@@ -48,8 +49,15 @@ export default function DetailKuis() {
   // Edit/Add Soal form
   const [soalForm, setSoalForm] = useState({
     soal_soal: '', jawaban_a: '', jawaban_b: '', jawaban_c: '', jawaban_d: '',
-    jawaban_benar: 'A', bobot_poin: 10
+    jawaban_benar: 'A', bobot_poin: 10,
+    imageFile: null,    // new File to upload (optional)
+    imagePreview: null, // preview URL for new image
+    imageFile_a: null, imagePreview_a: null,
+    imageFile_b: null, imagePreview_b: null,
+    imageFile_c: null, imagePreview_c: null,
+    imageFile_d: null, imagePreview_d: null,
   })
+  const soalImgRef = useRef(null)
 
   const showToast = (message, type = 'success') => {
     setToast({ show: true, message, type })
@@ -133,14 +141,21 @@ export default function DetailKuis() {
 
   const openEditSoal = (soal) => {
     setActiveSoal(soal)
+    const cleanText = (txt) => (txt === '-' ? '' : (txt || ''))
     setSoalForm({
-      soal_soal: soal.soal_soal || soal.pertanyaan || '',
-      jawaban_a: soal.jawaban_a || '',
-      jawaban_b: soal.jawaban_b || '',
-      jawaban_c: soal.jawaban_c || '',
-      jawaban_d: soal.jawaban_d || '',
+      soal_soal: cleanText(soal.soal_soal || soal.pertanyaan),
+      jawaban_a: cleanText(soal.jawaban_a),
+      jawaban_b: cleanText(soal.jawaban_b),
+      jawaban_c: cleanText(soal.jawaban_c),
+      jawaban_d: cleanText(soal.jawaban_d),
       jawaban_benar: (soal.jawaban_benar || 'A').toUpperCase(),
       bobot_poin: soal.poin !== undefined ? soal.poin : (soal.bobot_poin || 10),
+      imageFile: null,    // no new file selected yet — old image preserved on save
+      imagePreview: null, // preview of NEW file (not the existing stored image)
+      imageFile_a: null, imagePreview_a: null,
+      imageFile_b: null, imagePreview_b: null,
+      imageFile_c: null, imagePreview_c: null,
+      imageFile_d: null, imagePreview_d: null,
     })
     setModalError(null)
     setModalType('editSoal')
@@ -149,13 +164,33 @@ export default function DetailKuis() {
   const openDeleteSoal = (soal) => { setActiveSoal(soal); setModalError(null); setModalType('deleteSoal') }
 
   const openAddSoal = () => {
-    setSoalForm({ soal_soal: '', jawaban_a: '', jawaban_b: '', jawaban_c: '', jawaban_d: '', jawaban_benar: 'A', bobot_poin: 10 })
+    setSoalForm({
+      soal_soal: '', jawaban_a: '', jawaban_b: '', jawaban_c: '', jawaban_d: '', jawaban_benar: 'A', bobot_poin: 10,
+      imageFile: null, imagePreview: null,
+      imageFile_a: null, imagePreview_a: null,
+      imageFile_b: null, imagePreview_b: null,
+      imageFile_c: null, imagePreview_c: null,
+      imageFile_d: null, imagePreview_d: null,
+    })
     setActiveSoal(null)
     setModalError(null)
     setModalType('addSoal')
   }
 
-  const closeModal = () => { setModalType(null); setActiveSoal(null); setModalError(null) }
+  const closeModal = () => {
+    setModalType(null)
+    setActiveSoal(null)
+    setModalError(null)
+    setSoalForm({
+      soal_soal: '', jawaban_a: '', jawaban_b: '', jawaban_c: '', jawaban_d: '', jawaban_benar: 'A', bobot_poin: 10,
+      imageFile: null, imagePreview: null,
+      imageFile_a: null, imagePreview_a: null,
+      imageFile_b: null, imagePreview_b: null,
+      imageFile_c: null, imagePreview_c: null,
+      imageFile_d: null, imagePreview_d: null,
+    })
+    if (soalImgRef.current) soalImgRef.current.value = ''
+  }
 
   // ─── Handlers ────────────────────────────────────────────────────────
   const handleEditQuiz = async (e) => {
@@ -197,22 +232,60 @@ export default function DetailKuis() {
   const handleSaveSoal = async (e) => {
     e.preventDefault()
     setSubmitting(true); setModalError(null)
-    const payload = {
-      soal_soal: soalForm.soal_soal,
-      jawaban_a: soalForm.jawaban_a,
-      jawaban_b: soalForm.jawaban_b,
-      jawaban_c: soalForm.jawaban_c,
-      jawaban_d: soalForm.jawaban_d,
-      jawaban_benar: soalForm.jawaban_benar.toLowerCase(),
-      bobot_poin: Number(soalForm.bobot_poin),
-      poin: Number(soalForm.bobot_poin),
-    }
+
+    const hasQuestionImage = !!(soalForm.imageFile || activeSoal?.gambar_soal_url)
+    const finalSoal = (!soalForm.soal_soal || !soalForm.soal_soal.trim()) && hasQuestionImage ? "-" : soalForm.soal_soal
+
+    const finalJawabanA = (!soalForm.jawaban_a || !soalForm.jawaban_a.trim()) && (soalForm.imageFile_a || activeSoal?.gambar_jawaban_a_url) ? "-" : soalForm.jawaban_a
+    const finalJawabanB = (!soalForm.jawaban_b || !soalForm.jawaban_b.trim()) && (soalForm.imageFile_b || activeSoal?.gambar_jawaban_b_url) ? "-" : soalForm.jawaban_b
+    const finalJawabanC = (!soalForm.jawaban_c || !soalForm.jawaban_c.trim()) && (soalForm.imageFile_c || activeSoal?.gambar_jawaban_c_url) ? "-" : soalForm.jawaban_c
+    const finalJawabanD = (!soalForm.jawaban_d || !soalForm.jawaban_d.trim()) && (soalForm.imageFile_d || activeSoal?.gambar_jawaban_d_url) ? "-" : soalForm.jawaban_d
+
+    const hasAnyImage = !!(soalForm.imageFile || soalForm.imageFile_a || soalForm.imageFile_b || soalForm.imageFile_c || soalForm.imageFile_d)
 
     let res
-    if (modalType === 'addSoal') {
-      res = await createSoal({ ...payload, kuis_id: quiz.kuis_id || quiz.id })
+    if (hasAnyImage) {
+      // Has new image — use FormData (multipart/form-data)
+      const fd = new FormData()
+      fd.append('soal_soal', finalSoal)
+      fd.append('jawaban_a', finalJawabanA)
+      fd.append('jawaban_b', finalJawabanB)
+      fd.append('jawaban_c', finalJawabanC)
+      fd.append('jawaban_d', finalJawabanD)
+      fd.append('jawaban_benar', soalForm.jawaban_benar.toLowerCase())
+      fd.append('bobot_poin', Number(soalForm.bobot_poin))
+      fd.append('poin', Number(soalForm.bobot_poin))
+      
+      if (soalForm.imageFile) fd.append('gambar_soal', soalForm.imageFile)
+      if (soalForm.imageFile_a) fd.append('gambar_jawaban_a', soalForm.imageFile_a)
+      if (soalForm.imageFile_b) fd.append('gambar_jawaban_b', soalForm.imageFile_b)
+      if (soalForm.imageFile_c) fd.append('gambar_jawaban_c', soalForm.imageFile_c)
+      if (soalForm.imageFile_d) fd.append('gambar_jawaban_d', soalForm.imageFile_d)
+
+      if (modalType === 'addSoal') {
+        fd.append('kuis_id', quiz.kuis_id || quiz.id)
+        res = await createSoal(fd)  // POST multipart
+      } else {
+        // updateSoal auto-adds _method=PUT and uses POST for method spoofing
+        res = await updateSoal(activeSoal.id || activeSoal.soal_id, fd)
+      }
     } else {
-      res = await updateSoal(activeSoal.id || activeSoal.soal_id, payload)
+      // No new image — plain JSON (old image preserved by backend if exists)
+      const payload = {
+        soal_soal: finalSoal,
+        jawaban_a: finalJawabanA,
+        jawaban_b: finalJawabanB,
+        jawaban_c: finalJawabanC,
+        jawaban_d: finalJawabanD,
+        jawaban_benar: soalForm.jawaban_benar.toLowerCase(),
+        bobot_poin: Number(soalForm.bobot_poin),
+        poin: Number(soalForm.bobot_poin),
+      }
+      if (modalType === 'addSoal') {
+        res = await createSoal({ ...payload, kuis_id: quiz.kuis_id || quiz.id })
+      } else {
+        res = await updateSoal(activeSoal.id || activeSoal.soal_id, payload)
+      }
     }
 
     setSubmitting(false)
@@ -305,11 +378,7 @@ export default function DetailKuis() {
       {/* Main */}
       <main className="dk-main">
         <header className="dk-header-row">
-          <button className="dk-icon-btn" aria-label="Notifikasi">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 0 1-3.46 0" />
-            </svg>
-          </button>
+          <NotificationDropdown buttonClass="dk-icon-btn" />
           <div className="dk-icon-btn">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="12" cy="12" r="10" /><path d="M8 14s1.5 2 4 2 4-2 4-2" />
@@ -474,18 +543,39 @@ export default function DetailKuis() {
                     )}
                   </div>
 
-                  <div className="dk-question-text">{q.soal_soal || q.pertanyaan}</div>
+                  {q.soal_soal !== '-' && <div className="dk-question-text">{q.soal_soal || q.pertanyaan}</div>}
+
+                  {/* Show existing question image if available */}
+                  {q.gambar_soal_url && (
+                    <img
+                      src={getImageUrl(q.gambar_soal_url)}
+                      alt="Gambar soal"
+                      style={{ maxWidth: '100%', maxHeight: 220, borderRadius: 10, marginBottom: 12, objectFit: 'contain', border: '1px solid #e2e8f0' }}
+                    />
+                  )}
 
                   <div className="dk-answers">
                     {ANSWER_LETTERS.map(letter => {
-                      const key = `jawaban_${letter.toLowerCase()}`
-                      const text = q[key] || ''
-                      if (!text) return null
-                      const isCorrect = (q.jawaban_benar || '').toUpperCase() === letter
-                      return (
-                        <div className={`dk-answer-option ${isCorrect ? 'correct' : ''}`} key={letter}>
-                          <span className="dk-answer-letter">{letter}</span>
-                          <span className="dk-answer-text">{text}</span>
+                       const key = `jawaban_${letter.toLowerCase()}`
+                       const text = q[key] || ''
+                       if (!text) return null
+                       const isCorrect = (q.jawaban_benar || '').toUpperCase() === letter
+                       return (
+                         <div className={`dk-answer-option ${isCorrect ? 'correct' : ''}`} key={letter} style={{ height: 'auto', display: 'flex', alignItems: 'center' }}>
+                           <span className="dk-answer-letter">{letter}</span>
+                           <div style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: 1 }}>
+                             {text !== '-' && <span className="dk-answer-text">{text}</span>}
+                            {q[`gambar_${key}_url`] && (
+                              <div style={{ marginTop: 6 }}>
+                                <img
+                                  src={getImageUrl(q[`gambar_${key}_url`])}
+                                  alt={`Gambar pilihan ${letter}`}
+                                  style={{ maxWidth: '100%', maxHeight: 100, borderRadius: 6, objectFit: 'contain', border: '1px solid rgba(0,0,0,0.08)' }}
+                                  onError={e => { e.target.style.display = 'none' }}
+                                />
+                              </div>
+                            )}
+                          </div>
                           {isCorrect && (
                             <svg style={{ marginLeft: 'auto', flexShrink: 0 }} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                               <polyline points="20 6 9 17 4 12" />
@@ -585,39 +675,171 @@ export default function DetailKuis() {
 
                 <div className="dk-form-group">
                   <label>Pertanyaan</label>
-                  <textarea required rows={3} value={soalForm.soal_soal} onChange={e => setSoalForm(p => ({ ...p, soal_soal: e.target.value }))} placeholder="Tuliskan pertanyaan..." />
+                  <textarea required={!activeSoal?.gambar_soal_url && !soalForm.imageFile && !soalForm.imagePreview} rows={3} value={soalForm.soal_soal} onChange={e => setSoalForm(p => ({ ...p, soal_soal: e.target.value }))} placeholder="Tuliskan pertanyaan..." />
                 </div>
 
-                {ANSWER_LETTERS.map(letter => (
-                  <div className="dk-form-group" key={letter}>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <span style={{
-                        width: 24, height: 24, borderRadius: '50%', display: 'inline-flex', alignItems: 'center',
-                        justifyContent: 'center', fontSize: 12, fontWeight: 700, flexShrink: 0,
-                        background: soalForm.jawaban_benar === letter ? '#16a34a' : '#eff6ff',
-                        color: soalForm.jawaban_benar === letter ? '#fff' : '#2563eb'
-                      }}>{letter}</span>
-                      Pilihan {letter}
-                      {soalForm.jawaban_benar === letter && <span style={{ fontSize: 11, color: '#16a34a', fontWeight: 600 }}>✓ Benar</span>}
-                    </label>
-                    <div style={{ display: 'flex', gap: 8 }}>
-                      <input
-                        type="text" required style={{ flex: 1 }}
-                        value={soalForm[`jawaban_${letter.toLowerCase()}`]}
-                        onChange={e => setSoalForm(p => ({ ...p, [`jawaban_${letter.toLowerCase()}`]: e.target.value }))}
-                        placeholder={`Jawaban ${letter}...`}
-                      />
-                      <button type="button" className={`dk-btn-correct ${soalForm.jawaban_benar === letter ? 'active' : ''}`}
-                        onClick={() => setSoalForm(p => ({ ...p, jawaban_benar: letter }))}>
-                        {soalForm.jawaban_benar === letter ? '✓ Benar' : 'Tandai Benar'}
-                      </button>
+                {ANSWER_LETTERS.map(letter => {
+                  const letterLower = letter.toLowerCase()
+                  const existingImgUrl = activeSoal?.[`gambar_jawaban_${letterLower}_url`]
+                  const previewUrl = soalForm[`imagePreview_${letterLower}`]
+                  const hasImage = soalForm[`imageFile_${letterLower}`] || existingImgUrl
+
+                  return (
+                    <div className="dk-form-group" key={letter}>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <span style={{
+                          width: 24, height: 24, borderRadius: '50%', display: 'inline-flex', alignItems: 'center',
+                          justifyContent: 'center', fontSize: 12, fontWeight: 700, flexShrink: 0,
+                          background: soalForm.jawaban_benar === letter ? '#16a34a' : '#eff6ff',
+                          color: soalForm.jawaban_benar === letter ? '#fff' : '#2563eb'
+                        }}>{letter}</span>
+                        Pilihan {letter}
+                        {soalForm.jawaban_benar === letter && <span style={{ fontSize: 11, color: '#16a34a', fontWeight: 600 }}>✓ Benar</span>}
+                      </label>
+                      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                        <input
+                          type="text" required={!hasImage} style={{ flex: 1 }}
+                          value={soalForm[`jawaban_${letterLower}`]}
+                          onChange={e => setSoalForm(p => ({ ...p, [`jawaban_${letterLower}`]: e.target.value }))}
+                          placeholder={`Jawaban ${letter}...`}
+                        />
+
+                        {/* Hidden file input for this choice */}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          id={`file-${letter}`}
+                          style={{ display: 'none' }}
+                          onChange={e => {
+                            const file = e.target.files?.[0]
+                            if (!file) return
+                            if (file.size > 2 * 1024 * 1024) { alert('Ukuran gambar maksimal 2MB'); return }
+                            setSoalForm(p => ({
+                              ...p,
+                              [`imageFile_${letterLower}`]: file,
+                              [`imagePreview_${letterLower}`]: URL.createObjectURL(file)
+                            }))
+                          }}
+                        />
+
+                        {/* File upload trigger button */}
+                        <button
+                          type="button"
+                          onClick={() => document.getElementById(`file-${letter}`).click()}
+                          style={{
+                            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                            background: hasImage ? '#eff6ff' : '#f1f5f9',
+                            color: hasImage ? '#2563eb' : '#64748b',
+                            border: '1.5px solid',
+                            borderColor: hasImage ? '#bfdbfe' : '#cbd5e1',
+                            borderRadius: 10, width: 44, height: 44, cursor: 'pointer', flexShrink: 0, transition: 'all 0.18s'
+                          }}
+                          title="Unggah gambar untuk jawaban ini"
+                        >
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>
+                          </svg>
+                        </button>
+
+                        <button type="button" className={`dk-btn-correct ${soalForm.jawaban_benar === letter ? 'active' : ''}`}
+                          onClick={() => setSoalForm(p => ({ ...p, jawaban_benar: letter }))}>
+                          {soalForm.jawaban_benar === letter ? '✓ Benar' : 'Tandai Benar'}
+                        </button>
+                      </div>
+
+                      {/* Display existing or new image preview below input */}
+                      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginTop: 8, paddingLeft: 32 }}>
+                        {/* Existing image */}
+                        {modalType === 'editSoal' && existingImgUrl && !previewUrl && (
+                          <div style={{ position: 'relative' }}>
+                            <img
+                              src={getImageUrl(existingImgUrl)}
+                              alt={`Gambar jawaban ${letter} saat ini`}
+                              style={{ maxWidth: 120, maxHeight: 80, borderRadius: 6, objectFit: 'contain', border: '1px solid #e2e8f0' }}
+                            />
+                            <div style={{ fontSize: 10, color: '#94a3b8', marginTop: 2 }}>Gambar saat ini</div>
+                          </div>
+                        )}
+
+                        {/* New preview */}
+                        {previewUrl && (
+                          <div style={{ position: 'relative', display: 'inline-block' }}>
+                            <img src={previewUrl} alt={`Preview gambar jawaban ${letter}`} style={{ maxWidth: 120, maxHeight: 80, borderRadius: 6, objectFit: 'contain', border: '2px solid #2563eb' }} />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSoalForm(p => ({ ...p, [`imageFile_${letterLower}`]: null, [`imagePreview_${letterLower}`]: null }))
+                                const fileEl = document.getElementById(`file-${letter}`)
+                                if (fileEl) fileEl.value = ''
+                              }}
+                              style={{ position: 'absolute', top: -6, right: -6, background: '#ef4444', color: '#fff', border: 'none', borderRadius: '50%', width: 18, height: 18, cursor: 'pointer', fontSize: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}
+                              title="Hapus gambar baru"
+                            >✕</button>
+                            <div style={{ fontSize: 10, color: '#2563eb', marginTop: 2 }}>Gambar baru</div>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  )
+                })}
 
                 <div className="dk-form-group">
                   <label>Bobot Poin</label>
                   <input type="number" min="1" max="100" value={soalForm.bobot_poin} onChange={e => setSoalForm(p => ({ ...p, bobot_poin: parseInt(e.target.value) || 10 }))} />
+                </div>
+
+                {/* Gambar Soal (opsional) */}
+                <div className="dk-form-group">
+                  <label>Gambar Soal <span style={{ fontWeight: 400, color: '#94a3b8', fontSize: 12 }}>(opsional)</span></label>
+
+                  {/* Show existing image when editing */}
+                  {modalType === 'editSoal' && activeSoal?.gambar_soal_url && !soalForm.imagePreview && (
+                    <div style={{ marginBottom: 8 }}>
+                      <img
+                        src={getImageUrl(activeSoal.gambar_soal_url)}
+                        alt="Gambar soal saat ini"
+                        style={{ maxWidth: '100%', maxHeight: 140, borderRadius: 8, objectFit: 'contain', border: '1px solid #e2e8f0' }}
+                      />
+                      <p style={{ fontSize: 12, color: '#94a3b8', margin: '4px 0 0' }}>Gambar saat ini — pilih file baru untuk mengganti</p>
+                    </div>
+                  )}
+
+                  {/* Preview of newly selected image */}
+                  {soalForm.imagePreview && (
+                    <div style={{ marginBottom: 8, position: 'relative', display: 'inline-block' }}>
+                      <img src={soalForm.imagePreview} alt="Preview gambar baru" style={{ maxWidth: '100%', maxHeight: 140, borderRadius: 8, objectFit: 'contain', border: '2px solid #2563eb' }} />
+                      <button
+                        type="button"
+                        onClick={() => { setSoalForm(p => ({ ...p, imageFile: null, imagePreview: null })); if (soalImgRef.current) soalImgRef.current.value = '' }}
+                        style={{ position: 'absolute', top: 4, right: 4, background: '#ef4444', color: '#fff', border: 'none', borderRadius: '50%', width: 22, height: 22, cursor: 'pointer', fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                        title="Hapus gambar baru"
+                      >✕</button>
+                    </div>
+                  )}
+
+                  {/* File input */}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    ref={soalImgRef}
+                    style={{ display: 'none' }}
+                    onChange={e => {
+                      const file = e.target.files?.[0]
+                      if (!file) return
+                      if (file.size > 5 * 1024 * 1024) { alert('Ukuran gambar maksimal 5MB'); return }
+                      setSoalForm(p => ({ ...p, imageFile: file, imagePreview: URL.createObjectURL(file) }))
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => soalImgRef.current?.click()}
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: 8, padding: '7px 14px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>
+                    </svg>
+                    {soalForm.imageFile ? 'Ganti Gambar' : (modalType === 'editSoal' && activeSoal?.gambar_soal_url ? 'Ganti Gambar' : '+ Tambah Gambar')}
+                  </button>
                 </div>
 
                 <div className="dk-modal-actions">

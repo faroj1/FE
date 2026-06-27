@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { me, logoutApi, updateProfile, updatePassword, uploadAvatar } from '../utils/api'
+import { me, logoutApi, updateProfile, updatePassword, uploadAvatar, getImageUrl } from '../utils/api'
 import { getUser, saveUser, clearToken, isAuthenticated } from '../utils/auth'
+import NotificationDropdown from '../components/NotificationDropdown'
 import '../styles/profil.css'
 
 export default function Profil() {
@@ -75,7 +76,7 @@ export default function Profil() {
             bio: u.bio || u.deskripsi || '',
           })
           if (u.avatar_url && !localStorage.getItem('user_avatar_base64')) {
-            setAvatarPreview(u.avatar_url)
+            setAvatarPreview(getImageUrl(u.avatar_url))
           }
         }
       } else {
@@ -296,12 +297,7 @@ export default function Profil() {
       {/* Main Container */}
       <main className="profile-main">
         <header className="profile-header-row">
-          <button className="profile-icon-btn" aria-label="Notifikasi">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-              <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-            </svg>
-          </button>
+          <NotificationDropdown buttonClass="profile-icon-btn" />
           <div className="profile-icon-btn">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="12" cy="12" r="10" />
@@ -474,7 +470,7 @@ export default function Profil() {
                   <div className="avatar-card-content">
                     <div className="avatar-container">
                       {avatarPreview ? (
-                        <img src={avatarPreview} alt="Foto Profil" className="profile-avatar-circle" />
+                        <img src={getImageUrl(avatarPreview)} alt="Foto Profil" className="profile-avatar-circle" />
                       ) : (
                         <div className="profile-avatar-circle">
                           {getInitial()}

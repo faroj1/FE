@@ -1,7 +1,8 @@
 import { useEffect, useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { getMyQuizzes, createQuiz, updateQuiz, deleteQuiz, logoutApi, publishQuiz } from '../utils/api'
+import { getMyQuizzes, createQuiz, updateQuiz, deleteQuiz, logoutApi, publishQuiz, importQuizExcel, getApiBase } from '../utils/api'
 import { clearToken, isAuthenticated } from '../utils/auth'
+import NotificationDropdown from '../components/NotificationDropdown'
 import '../styles/kelolakuis.css'
 
 export default function KelolaKuis() {
@@ -19,6 +20,13 @@ export default function KelolaKuis() {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState(null)
   const [showLogoutModal, setShowLogoutModal] = useState(false)
+
+  // Import Excel Modal states
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false)
+  const [importFile, setImportFile] = useState(null)
+  const [importing, setImporting] = useState(false)
+  const [importErrors, setImportErrors] = useState(null)
+  const [dragActive, setDragActive] = useState(false)
 
   const navigate = useNavigate()
   const menuRef = useRef(null)
@@ -171,6 +179,88 @@ export default function KelolaKuis() {
     }
   }
 
+  const parseImportErrors = (data) => {
+    if (!data) return ['Terjadi kesalahan saat mengunggah berkas.']
+    if (data.errors) {
+      if (Array.isArray(data.errors)) {
+        return data.errors
+      }
+      if (typeof data.errors === 'object') {
+        return Object.values(data.errors).flat()
+      }
+    }
+    if (data.message) {
+      return [data.message]
+    }
+    return ['Gagal melakukan import file Excel.']
+  }
+
+  const handleDrag = (e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActive(true)
+    } else if (e.type === "dragleave") {
+      setDragActive(false)
+    }
+  }
+
+  const handleDrop = (e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setDragActive(false)
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      const file = e.dataTransfer.files[0]
+      const ext = file.name.split('.').pop().toLowerCase()
+      if (ext === 'xlsx' || ext === 'xls') {
+        setImportFile(file)
+        setImportErrors(null)
+      } else {
+        setImportErrors(['Hanya berkas Excel dengan ekstensi .xlsx atau .xls yang diperbolehkan.'])
+      }
+    }
+  }
+
+  const handleFileChange = (e) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0]
+      const ext = file.name.split('.').pop().toLowerCase()
+      if (ext === 'xlsx' || ext === 'xls') {
+        setImportFile(file)
+        setImportErrors(null)
+      } else {
+        setImportErrors(['Hanya berkas Excel dengan ekstensi .xlsx atau .xls yang diperbolehkan.'])
+      }
+    }
+  }
+
+  const handleImportSubmit = async (e) => {
+    e.preventDefault()
+    if (!importFile) {
+      setImportErrors(['Silakan pilih berkas Excel terlebih dahulu.'])
+      return
+    }
+
+    setImporting(true)
+    setImportErrors(null)
+
+    const formData = new FormData()
+    formData.append('file', importFile)
+
+    const res = await importQuizExcel(formData)
+    setImporting(false)
+
+    if (res.ok) {
+      showToast('Kuis berhasil diimport dari Excel!')
+      setIsImportModalOpen(false)
+      setImportFile(null)
+      fetchQuizzes()
+    } else {
+      const parsedErrors = parseImportErrors(res.data)
+      setImportErrors(parsedErrors)
+    }
+  }
+
   const filteredQuizzes = quizzes.filter(q => {
     // Tab filter
     const status = (q.status || 'draft').toLowerCase()
@@ -235,7 +325,7 @@ export default function KelolaKuis() {
         </div>
 
         <div className="kk-sidebar-footer">
-          <button className="kk-nav-item">
+          <button className="kk-nav-item" onClick={() => navigate('/bantuan')}>
             <svg className="icon-svg" viewBox="0 0 24 24" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="12" cy="12" r="10" />
               <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /><line x1="12" y1="17" x2="12.01" y2="17" />
@@ -256,12 +346,7 @@ export default function KelolaKuis() {
       {/* Main Area */}
       <main className="kk-main">
         <header className="kk-header-row">
-          <button className="kk-icon-btn" aria-label="Notifikasi">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-              <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-            </svg>
-          </button>
+          <NotificationDropdown buttonClass="kk-icon-btn" />
           <div className="kk-icon-btn">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="12" cy="12" r="10" />
@@ -277,12 +362,23 @@ export default function KelolaKuis() {
               <h1>Kelola Kuis</h1>
               <p>Pantau, buat, dan kelola semua kuis Anda dalam satu tempat dengan mudah dan efisien.</p>
             </div>
-            <button className="kk-btn-create" onClick={() => navigate('/buat-kuis')}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
-              </svg>
-              Buat Kuis Baru
-            </button>
+            <div className="kk-page-header-actions">
+              <button className="kk-btn-import" onClick={() => { setIsImportModalOpen(true); setImportFile(null); setImportErrors(null); }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                  <polyline points="14 2 14 8 20 8" />
+                  <line x1="12" y1="18" x2="12" y2="12" />
+                  <polyline points="9 15 12 12 15 15" />
+                </svg>
+                Import Excel
+              </button>
+              <button className="kk-btn-create" onClick={() => navigate('/buat-kuis')}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
+                </svg>
+                Buat Kuis Baru
+              </button>
+            </div>
           </div>
 
           <div className="kk-toolbar">
@@ -376,14 +472,16 @@ export default function KelolaKuis() {
                               </svg>
                               Detail Kuis
                             </button>
-                            <button className="kk-dropdown-item" onClick={() => { setOpenMenuId(null); navigate(`/kelola-kuis/hasil/${q.kuis_id || q.id}`, { state: { quiz: q } }); }}>
-                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                <line x1="18" y1="20" x2="18" y2="10"></line>
-                                <line x1="12" y1="20" x2="12" y2="4"></line>
-                                <line x1="6" y1="20" x2="6" y2="14"></line>
-                              </svg>
-                              Lihat Hasil
-                            </button>
+                            {!!q.is_published && (
+                              <button className="kk-dropdown-item" onClick={() => { setOpenMenuId(null); navigate(`/kelola-kuis/hasil/${q.kuis_id || q.id}`, { state: { quiz: q } }); }}>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                  <line x1="18" y1="20" x2="18" y2="10"></line>
+                                  <line x1="12" y1="20" x2="12" y2="4"></line>
+                                  <line x1="6" y1="20" x2="6" y2="14"></line>
+                                </svg>
+                                Lihat Hasil
+                              </button>
+                            )}
                             <button className="kk-dropdown-item" onClick={() => { setOpenMenuId(null); navigate(`/kelola-kuis/detail/${q.kuis_id || q.id}?edit=true`, { state: { quiz: q } }); }}>
                               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                                 <path d="M12 20h9"></path>
@@ -517,6 +615,148 @@ export default function KelolaKuis() {
                 </div>
               </form>
             )}
+          </div>
+        </div>
+      )}
+
+      {isImportModalOpen && (
+        <div className="kk-modal-overlay">
+          <div className="kk-modal kk-import-modal">
+            <h2>Import Kuis dari Excel</h2>
+            <p className="sub">Buat kuis dan soal sekaligus dengan mengunggah berkas template Excel yang telah diisi.</p>
+
+            <div className="kk-import-steps">
+              <div className="kk-import-step">
+                <span className="kk-step-num">1</span>
+                <div className="kk-step-content">
+                  <strong>Unduh Template Excel</strong>
+                  <p>Gunakan format template standar agar data terbaca dengan benar oleh sistem.</p>
+                  <a 
+                    href={`${getApiBase()}/api/kuis/template-excel`} 
+                    download="Template_Kuis.xlsx"
+                    className="kk-btn-download-template"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                      <polyline points="7 10 12 15 17 10" />
+                      <line x1="12" y1="15" x2="12" y2="3" />
+                    </svg>
+                    Unduh Template Excel
+                  </a>
+                </div>
+              </div>
+
+              <div className="kk-import-step">
+                <span className="kk-step-num">2</span>
+                <div className="kk-step-content">
+                  <strong>Isi Data Kuis & Soal</strong>
+                  <p>Lengkapi kolom seperti judul kuis, kategori, pertanyaan, dan pilihan jawaban di Excel.</p>
+                </div>
+              </div>
+
+              <div className="kk-import-step">
+                <span className="kk-step-num">3</span>
+                <div className="kk-step-content">
+                  <strong>Unggah Berkas Excel</strong>
+                  <p>Seret berkas ke area di bawah atau klik untuk mencari berkas dari komputer Anda.</p>
+                </div>
+              </div>
+            </div>
+
+            <form onSubmit={handleImportSubmit} onDragEnter={handleDrag}>
+              <div 
+                className={`kk-import-drag-zone ${dragActive ? 'active' : ''} ${importFile ? 'has-file' : ''}`}
+                onDragEnter={handleDrag}
+                onDragOver={handleDrag}
+                onDragLeave={handleDrag}
+                onDrop={handleDrop}
+              >
+                {!importFile ? (
+                  <label className="kk-import-label">
+                    <input 
+                      type="file" 
+                      className="kk-import-input" 
+                      accept=".xlsx, .xls"
+                      onChange={handleFileChange}
+                    />
+                    <div className="kk-import-icon-wrap">
+                      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                        <polyline points="17 8 12 3 7 8" />
+                        <line x1="12" y1="3" x2="12" y2="15" />
+                      </svg>
+                    </div>
+                    <span className="kk-import-text-main">Pilih berkas Excel (.xlsx, .xls)</span>
+                    <span className="kk-import-text-sub">atau seret dan lepas berkas di sini</span>
+                  </label>
+                ) : (
+                  <div className="kk-import-file-details">
+                    <svg className="kk-file-icon" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                      <polyline points="14 2 14 8 20 8" />
+                    </svg>
+                    <div className="kk-file-info">
+                      <span className="kk-file-name">{importFile.name}</span>
+                      <span className="kk-file-size">{(importFile.size / 1024).toFixed(1)} KB</span>
+                    </div>
+                    <button 
+                      type="button" 
+                      className="kk-btn-remove-file"
+                      onClick={() => setImportFile(null)}
+                      disabled={importing}
+                    >
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18" />
+                        <line x1="6" y1="6" x2="18" y2="18" />
+                      </svg>
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {importErrors && importErrors.length > 0 && (
+                <div className="kk-import-error-box">
+                  <div className="kk-import-error-title">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="12" cy="12" r="10" />
+                      <line x1="12" y1="8" x2="12" y2="12" />
+                      <line x1="12" y1="16" x2="12.01" y2="16" />
+                    </svg>
+                    Gagal Mengimpor Data
+                  </div>
+                  <div className="kk-import-error-list">
+                    {importErrors.map((err, idx) => (
+                      <div key={idx} className="kk-import-error-item">{err}</div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="kk-modal-actions">
+                <button 
+                  type="button" 
+                  className="kk-btn-cancel" 
+                  onClick={() => setIsImportModalOpen(false)} 
+                  disabled={importing}
+                >
+                  Batal
+                </button>
+                <button 
+                  type="submit" 
+                  className="kk-btn-submit kk-btn-import-submit" 
+                  disabled={importing || !importFile}
+                >
+                  {importing ? (
+                    <>
+                      <div className="kk-spinner-btn"></div>
+                      Mengimpor...
+                    </>
+                  ) : 'Mulai Import'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

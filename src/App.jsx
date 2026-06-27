@@ -11,6 +11,7 @@ import KerjakanKuis from './pages/KerjakanKuis'
 import DetailKuis from './pages/DetailKuis'
 import HasilKuis from './pages/HasilKuis'
 import Profil from './pages/Profil'
+import Bantuan from './pages/Bantuan'
 import ProtectedRoute from './components/ProtectedRoute'
 
 function App() {
@@ -21,7 +22,7 @@ function App() {
   // Determine active menu item
   const isBerandaActive = location.pathname === '/'
   const isDaftarKuisActive = location.pathname === '/daftar-kuis'
-  const isDashboard = location.pathname.startsWith('/dashboard') || location.pathname.startsWith('/kelola-kuis') || location.pathname.startsWith('/buat-kuis') || location.pathname.startsWith('/profil')
+  const isDashboard = location.pathname.startsWith('/dashboard') || location.pathname.startsWith('/kelola-kuis') || location.pathname.startsWith('/buat-kuis') || location.pathname.startsWith('/profil') || location.pathname.startsWith('/bantuan')
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', fontFamily: "'Inter', sans-serif" }}>
@@ -119,6 +120,14 @@ function App() {
           <Route path="/daftar-kuis" element={<QuizList searchTerm={searchTerm} />} />
           <Route path="/kerjakan-kuis/publik/:id" element={<KerjakanKuis />} />
           <Route path="/kerjakan-kuis/:kodeKuis" element={<KerjakanKuis />} />
+          <Route
+            path="/bantuan"
+            element={
+              <ProtectedRoute>
+                <Bantuan />
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="/dashboard"
             element={

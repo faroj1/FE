@@ -33,10 +33,32 @@ export default function QuizList({ searchTerm }) {
   useEffect(() => {
     const fetchQuizzes = async () => {
       try {
-        // Try without auth first
         const result = await getPublicQuizzes()
-        const rawData = result.data?.data || result.data || []
-        const dataArr = Array.isArray(rawData) ? rawData : []
+
+        // DEBUG: log raw response to see all available fields from backend
+        console.log('[QuizList] raw result.data:', JSON.stringify(result.data)?.slice(0, 800))
+
+        // Handle all common Laravel response shapes:
+        // Shape 1: { data: [...] }                     → result.data.data is array
+        // Shape 2: { data: { data: [...], total: N } } → paginated: result.data.data.data is array
+        // Shape 3: [...]                               → result.data is direct array
+        const d = result.data
+        let dataArr = []
+        if (Array.isArray(d)) {
+          dataArr = d
+        } else if (Array.isArray(d?.data)) {
+          dataArr = d.data
+        } else if (Array.isArray(d?.data?.data)) {
+          // paginated: { data: { current_page: 1, data: [...], total: N } }
+          dataArr = d.data.data
+        }
+
+        if (dataArr.length > 0) {
+          console.log('[QuizList] first item keys:', Object.keys(dataArr[0]))
+          console.log('[QuizList] first item:', JSON.stringify(dataArr[0])?.slice(0, 500))
+        } else {
+          console.warn('[QuizList] dataArr is empty — rawData shape not matched. result.data:', result.data)
+        }
 
         const apiBase = getApiBase()
 
@@ -49,18 +71,27 @@ export default function QuizList({ searchTerm }) {
         // Filter only public quizzes (akses === 'publik')
         const mapped = dataArr
           .filter(item => (item.akses || item.access || '').toLowerCase() === 'publik')
-          .map(item => ({
-            id: item.kuis_id || item.id,
-            kode_kuis: item.kode_kuis || '',
-            title: item.judul || item.title || item.name || 'Kuis Tanpa Judul',
-            description: item.deskripsi || item.description || 'Uji pengetahuanmu dengan kuis ini!',
-            image: getFullImageUrl(item.image || item.cover_image) || getCoverByCategory(item.kategori || item.category),
-            questions: (item.jumlah_soal || item.questions_count || item.questions) ?? 0,
-            timeLimit: `${item.soal_waktu || item.time_limit || 15} Menit`,
-            targetClass: item.kelas || item.targetClass || item.target_class || 'Umum',
-            category: item.kategori || item.category || 'Umum',
-            status: item.status || 'Draft',
-          }))
+          .map(item => {
+            // Try every possible id field name the backend might use
+            const quizId = item.kuis_id || item.id || item.quiz_id || item.kuis?.kuis_id || null
+            if (!quizId && !item.kode_kuis) {
+              console.warn('[QuizList] Quiz item has no id or kode_kuis:', item)
+            }
+            const aksesVal = (item.akses || item.access || 'publik').toLowerCase()
+            return {
+              id: quizId,
+              kode_kuis: item.kode_kuis || '',
+              akses: aksesVal,   // keep akses so navigation can choose the right route
+              title: item.judul || item.title || item.name || 'Kuis Tanpa Judul',
+              description: item.deskripsi || item.description || 'Uji pengetahuanmu dengan kuis ini!',
+              image: getFullImageUrl(item.image || item.cover_image) || getCoverByCategory(item.kategori || item.category),
+              questions: (item.jumlah_soal || item.questions_count || item.questions) ?? 0,
+              timeLimit: `${item.soal_waktu || item.time_limit || 15} Menit`,
+              targetClass: item.kelas || item.targetClass || item.target_class || 'Umum',
+              category: item.kategori || item.category || 'Umum',
+              status: item.status || 'Draft',
+            }
+          })
 
         setQuizzes(mapped)
         setFilteredQuizzes(mapped)
@@ -117,16 +148,31 @@ export default function QuizList({ searchTerm }) {
     }
     sessionStorage.setItem('quiz_participant_name', nama.trim())
 
-    // Public quiz: no kode_kuis, route by ID
-    // Private quiz: has kode_kuis, route by code
-    if (selectedQuiz.kode_kuis) {
-      navigate(`/kerjakan-kuis/${selectedQuiz.kode_kuis}`, {
-        state: { nama: nama.trim() }
-      })
-    } else {
+    const isPubik = selectedQuiz.akses === 'publik'
+
+    if (isPubik && selectedQuiz.id) {
+      // Public quiz with id: always use /kerjakan-kuis/publik/:id
+      // This hits GET /api/kuis/publik/{id} as the backend expects
       navigate(`/kerjakan-kuis/publik/${selectedQuiz.id}`, {
         state: { nama: nama.trim() }
       })
+    } else if (isPubik && selectedQuiz.kode_kuis) {
+      // Public quiz without numeric id but has kode — use join route as fallback
+      navigate(`/kerjakan-kuis/${selectedQuiz.kode_kuis}`, {
+        state: { nama: nama.trim() }
+      })
+    } else if (!isPubik && selectedQuiz.kode_kuis) {
+      // Private quiz: always use join/kode route
+      navigate(`/kerjakan-kuis/${selectedQuiz.kode_kuis}`, {
+        state: { nama: nama.trim() }
+      })
+    } else if (selectedQuiz.id) {
+      // Any quiz with id as last fallback
+      navigate(`/kerjakan-kuis/publik/${selectedQuiz.id}`, {
+        state: { nama: nama.trim() }
+      })
+    } else {
+      setNamaError('Kuis ini tidak dapat diakses. ID kuis tidak tersedia di backend.')
     }
   }
 
@@ -213,6 +259,8 @@ export default function QuizList({ searchTerm }) {
                     <button
                       className="start-btn"
                       onClick={() => openModal(quiz)}
+                      disabled={!quiz.id && !quiz.kode_kuis}
+                      title={!quiz.id && !quiz.kode_kuis ? 'Kuis tidak tersedia' : 'Mulai kuis ini'}
                     >
                       Mulai Kuis
                     </button>
