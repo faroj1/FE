@@ -86,6 +86,12 @@ export const getUser = () => {
   }
 }
 
+/** Returns true when the saved user is already verified */
+export const isEmailVerified = () => {
+  const user = getUser()
+  return user?.email_verified === true
+}
+
 /** Returns Authorization header object with Bearer token */
 export const authHeader = () => {
   const token = getToken()

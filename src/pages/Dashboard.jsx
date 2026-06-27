@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import Swal from 'sweetalert2'
 import { me, getQuizzes, logoutApi } from '../utils/api'
 import { getUser, clearToken, isAuthenticated, getToken, decodeToken } from '../utils/auth'
 import NotificationDropdown from '../components/NotificationDropdown'
@@ -10,6 +11,7 @@ export default function Dashboard() {
   const [quizzes, setQuizzes] = useState([])
   const [loading, setLoading] = useState(true)
   const [showLogoutModal, setShowLogoutModal] = useState(false)
+  const [error, setError] = useState(null)
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -30,9 +32,17 @@ export default function Dashboard() {
         const freshUser = uRes.data?.data || uRes.data
         if (freshUser) setUser(freshUser)
       } else if (uRes.status === 401) {
-        // JWT rejected by server — clear and redirect
         clearToken()
         navigate('/login', { replace: true })
+        return
+      } else if (uRes.status === 403) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Email belum terverifikasi',
+          text: 'Akses dashboard diblokir karena email Anda belum diverifikasi. Silakan cek email dan aktifkan akun terlebih dahulu.',
+          confirmButtonText: 'OK',
+        })
+        navigate('/verify-email', { replace: true })
         return
       }
 
@@ -42,6 +52,17 @@ export default function Dashboard() {
       if (qRes.ok) {
         const rawData = qRes.data?.data || qRes.data || []
         setQuizzes(Array.isArray(rawData) ? rawData : [])
+      } else if (qRes.status === 403) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Email belum terverifikasi',
+          text: 'Akses dashboard diblokir karena email Anda belum diverifikasi. Silakan cek email dan aktifkan akun terlebih dahulu.',
+          confirmButtonText: 'OK',
+        })
+        navigate('/verify-email', { replace: true })
+        return
+      } else {
+        setError(qRes.message || 'Terjadi kesalahan saat memuat data kuis.')
       }
 
       setLoading(false)
@@ -66,6 +87,14 @@ export default function Dashboard() {
   const totalCount = quizzes.length
   const activeCount = quizzes.filter(q => q.status === 'active' || q.status === 'aktif' || q.is_active).length
   const finishedCount = quizzes.filter(q => q.status === 'finished' || q.status === 'selesai' || q.is_finished || q.completed).length
+
+  const getInitial = () => {
+    const name = user?.name?.trim() || ''
+    if (!name) return 'U'
+    const parts = name.split(' ').filter(Boolean)
+    if (parts.length === 1) return parts[0].charAt(0).toUpperCase()
+    return `${parts[0].charAt(0)}${parts[parts.length - 1].charAt(0)}`.toUpperCase()
+  }
 
   // Category icon renderer
   const renderCategoryIcon = (category = '') => {
@@ -167,14 +196,16 @@ export default function Dashboard() {
             </span>
           )}
           <NotificationDropdown buttonClass="header-icon-btn" />
-          <div className="header-icon-btn">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="10" />
-              <path d="M8 14s1.5 2 4 2 4-2 4-2" />
-              <line x1="9" y1="9" x2="9.01" y2="9" /><line x1="15" y1="9" x2="15.01" y2="9" />
-            </svg>
+          <div className="header-icon-btn" style={{ background: '#e2e8f0', color: '#1e293b', fontWeight: 700, fontSize: 14 }}>
+            {getInitial()}
           </div>
         </header>
+
+        {error && (
+          <div style={{ margin: '0 48px 20px', padding: 14, borderRadius: 12, background: '#fee2e2', color: '#b91c1c', fontSize: 14 }}>
+            {error}
+          </div>
+        )}
 
         <div className="dashboard-container">
           {/* Greeting */}

@@ -41,8 +41,17 @@ const handleResponse = async (res) => {
   } catch {
     data = null
   }
+
   if (res.ok) return { ok: true, data }
-  return { ok: false, status: res.status, data }
+
+  const message =
+    data?.message ||
+    data?.error ||
+    data?.errors?.[0] ||
+    text ||
+    res.statusText
+
+  return { ok: false, status: res.status, data, message }
 }
 
 const handleNetworkError = (err) => {
@@ -345,3 +354,11 @@ export const uploadAvatar = async (formData) => {
   }
   return res
 }
+
+/** POST /api/email/verification-notification — resend teacher verification email */
+export const resendVerificationEmail = () =>
+  fetch(`${baseUrl}/api/email/verification-notification`, {
+    method: 'POST',
+    headers: { ...commonHeaders(), ...authHeader() },
+    body: JSON.stringify({}),
+  }).then(handleResponse).catch(handleNetworkError)

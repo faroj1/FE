@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getMyQuizzes, createQuiz, updateQuiz, deleteQuiz, logoutApi, publishQuiz, importQuizExcel, getApiBase } from '../utils/api'
-import { clearToken, isAuthenticated } from '../utils/auth'
+import { clearToken, getUser, isAuthenticated } from '../utils/auth'
 import NotificationDropdown from '../components/NotificationDropdown'
 import '../styles/kelolakuis.css'
 
@@ -30,6 +30,7 @@ export default function KelolaKuis() {
 
   const navigate = useNavigate()
   const menuRef = useRef(null)
+  const user = getUser()
 
   // Toast notification state
   const [toast, setToast] = useState({ show: false, message: '', type: 'success' })
@@ -39,6 +40,14 @@ export default function KelolaKuis() {
     setTimeout(() => {
       setToast({ show: false, message: '', type: 'success' })
     }, 3000)
+  }
+
+  const getInitial = () => {
+    const name = user?.name?.trim() || ''
+    if (!name) return 'U'
+    const parts = name.split(' ').filter(Boolean)
+    if (parts.length === 1) return parts[0].charAt(0).toUpperCase()
+    return `${parts[0].charAt(0)}${parts[parts.length - 1].charAt(0)}`.toUpperCase()
   }
 
   const handleCopyCode = (code) => {
@@ -347,12 +356,8 @@ export default function KelolaKuis() {
       <main className="kk-main">
         <header className="kk-header-row">
           <NotificationDropdown buttonClass="kk-icon-btn" />
-          <div className="kk-icon-btn">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="10" />
-              <path d="M8 14s1.5 2 4 2 4-2 4-2" />
-              <line x1="9" y1="9" x2="9.01" y2="9" /><line x1="15" y1="9" x2="15.01" y2="9" />
-            </svg>
+          <div className="kk-icon-btn" style={{ background: '#e2e8f0', color: '#1e293b', fontWeight: 700, fontSize: 14 }}>
+            {getInitial()}
           </div>
         </header>
 

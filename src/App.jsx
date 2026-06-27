@@ -12,6 +12,7 @@ import DetailKuis from './pages/DetailKuis'
 import HasilKuis from './pages/HasilKuis'
 import Profil from './pages/Profil'
 import Bantuan from './pages/Bantuan'
+import VerifyEmail from './pages/VerifyEmail'
 import ProtectedRoute from './components/ProtectedRoute'
 
 function App() {
@@ -125,6 +126,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <Bantuan />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/verify-email"
+            element={
+              <ProtectedRoute>
+                <VerifyEmail />
               </ProtectedRoute>
             }
           />
