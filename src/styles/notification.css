@@ -1,0 +1,130 @@
+.notif-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.notif-badge-dot {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 8px;
+  height: 8px;
+  background-color: #ef4444;
+  border-radius: 50%;
+  border: 1.5px solid #ffffff;
+}
+
+/* Align dropdown nicely under header */
+.notif-dropdown {
+  position: absolute;
+  top: calc(100% + 12px);
+  right: 0;
+  width: 320px;
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  z-index: 999;
+  overflow: hidden;
+  font-family: 'Inter', sans-serif;
+  animation: notif-slide-down 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes notif-slide-down {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.notif-dropdown-header {
+  padding: 14px 18px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.notif-dropdown-header h3 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.notif-dropdown-body {
+  max-height: 360px;
+  overflow-y: auto;
+}
+
+.notif-item {
+  display: flex;
+  gap: 12px;
+  padding: 14px 18px;
+  border-bottom: 1px solid #f8fafc;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+  text-align: left;
+}
+
+.notif-item:hover {
+  background-color: #f8fafc;
+}
+
+.notif-item:last-child {
+  border-bottom: none;
+}
+
+.notif-icon-circle {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.notif-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.notif-text {
+  margin: 0;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: #334155;
+  line-height: 1.4;
+}
+
+.notif-time {
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.notif-dropdown-footer {
+  padding: 12px 18px;
+  background-color: #fafafa;
+  border-top: 1px solid #f1f5f9;
+  text-align: center;
+}
+
+.notif-see-all-btn {
+  background: none;
+  border: none;
+  color: #2563eb;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 12px;
+  border-radius: 6px;
+  transition: all 0.15s ease;
+}
+
+.notif-see-all-btn:hover {
+  color: #1d4ed8;
+  background-color: #eff6ff;
+}

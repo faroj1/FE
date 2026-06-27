@@ -404,8 +404,8 @@
 
 .kk-quiz-result-stats {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
   margin-bottom: 32px;
 }
 
@@ -519,6 +519,6 @@
   .kk-quiz-answer-btn { padding: 14px 16px; }
   .kk-quiz-footer { flex-wrap: wrap; gap: 12px; }
   .kk-quiz-result-card { padding: 32px 24px; margin: 24px 16px; }
-  .kk-quiz-result-stats { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .kk-quiz-result-stats { grid-template-columns: repeat(2, 1fr); gap: 8px; }
   .kk-quiz-result-score-num { font-size: 40px; }
 }

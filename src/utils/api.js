@@ -11,6 +11,18 @@ export const setApiBase = (url) => {
 
 export const getApiBase = () => baseUrl
 
+// Helper to convert full ngrok / local image URLs to relative storage paths for proxying
+export const getImageUrl = (url) => {
+  if (!url) return ''
+  if (url.startsWith('data:') || url.startsWith('blob:')) return url
+  if (url.startsWith('/storage/')) return url
+  const storageIndex = url.indexOf('/storage/')
+  if (storageIndex !== -1) {
+    return url.substring(storageIndex)
+  }
+  return `/storage/${url}`
+}
+
 // ─── Common Headers ───────────────────────────────────────────────────────────
 // Always include ngrok-skip-browser-warning so ngrok free tier does not return
 // its HTML interstitial page instead of JSON.
@@ -118,13 +130,20 @@ export const createQuiz = (payload) =>
     body: JSON.stringify(payload),
   }).then(handleResponse).catch(handleNetworkError)
 
-/** POST /api/soal — create a question for a quiz */
-export const createSoal = (payload) =>
-  fetch(`${baseUrl}/api/soal`, {
+/** POST /api/soal — create a question for a quiz
+ * Accepts either a plain object (JSON) or FormData (multipart, when gambar_soal is included).
+ * When FormData is passed, Content-Type is NOT set manually — browser sets it automatically. */
+export const createSoal = (payload) => {
+  const isFormData = payload instanceof FormData
+  const headers = isFormData
+    ? { ...authHeader(), 'Accept': 'application/json', 'ngrok-skip-browser-warning': 'true' }
+    : { ...commonHeaders(), ...authHeader() }
+  return fetch(`${baseUrl}/api/soal`, {
     method: 'POST',
-    headers: { ...commonHeaders(), ...authHeader() },
-    body: JSON.stringify(payload),
+    headers,
+    body: isFormData ? payload : JSON.stringify(payload),
   }).then(handleResponse).catch(handleNetworkError)
+}
 
 /** PUT /api/kuis/{id} — update quiz */
 export const updateQuiz = (id, payload) =>
@@ -141,10 +160,62 @@ export const deleteQuiz = (id) =>
     headers: { ...commonHeaders(), ...authHeader() },
   }).then(handleResponse).catch(handleNetworkError)
 
-/** GET /api/kuis/{id}/results */
+/** GET /api/kuis/{id}/results (legacy, kept for compatibility) */
 export const getQuizResults = (id) =>
   fetch(`${baseUrl}/api/kuis/${id}/results`, {
     headers: { ...commonHeaders(), ...authHeader() },
+  }).then(handleResponse).catch(handleNetworkError)
+
+/** GET /api/kuis/{id}/hasil — quiz results summary: statistik, podium, daftar peserta (teacher, authenticated) */
+export const getQuizHasil = (id) =>
+  fetch(`${baseUrl}/api/kuis/${id}/hasil`, {
+    headers: { ...commonHeaders(), ...authHeader() },
+  }).then(handleResponse).catch(handleNetworkError)
+
+/** GET /api/kuis/{id}/hasil/{riwayatId} — detail jawaban per soal dari 1 peserta (teacher, authenticated) */
+export const getQuizHasilDetail = (id, riwayatId) =>
+  fetch(`${baseUrl}/api/kuis/${id}/hasil/${riwayatId}`, {
+    headers: { ...commonHeaders(), ...authHeader() },
+  }).then(handleResponse).catch(handleNetworkError)
+
+/** GET /api/kuis/{id}/hasil/export — download CSV hasil semua peserta (teacher, authenticated) */
+export const exportQuizHasil = async (id, quizTitle = 'hasil_kuis') => {
+  try {
+    const res = await fetch(`${baseUrl}/api/kuis/${id}/hasil/export`, {
+      headers: {
+        ...authHeader(),
+        'ngrok-skip-browser-warning': 'true',
+        'Accept': 'text/csv,application/csv,*/*',
+      },
+    })
+    if (!res.ok) {
+      const text = await res.text().catch(() => '')
+      let msg = ''
+      try { msg = JSON.parse(text)?.message } catch { msg = text }
+      return { ok: false, status: res.status, message: msg || `Export gagal (${res.status})` }
+    }
+    const blob = await res.blob()
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${quizTitle.replace(/[^a-z0-9]/gi, '_')}_export.csv`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+    return { ok: true }
+  } catch (err) {
+    console.error('[API exportQuizHasil]', err)
+    return { ok: false, status: 0, message: 'Koneksi gagal' }
+  }
+}
+
+/** POST /api/kuis/{id}/submit — submit student answers (no auth required) */
+export const submitQuiz = (id, payload) =>
+  fetch(`${baseUrl}/api/kuis/${id}/submit`, {
+    method: 'POST',
+    headers: commonHeaders(),
+    body: JSON.stringify(payload),
   }).then(handleResponse).catch(handleNetworkError)
 
 /** POST /api/kuis/{id}/publish — publish a quiz */
@@ -155,19 +226,47 @@ export const publishQuiz = (id) =>
     body: JSON.stringify({}),
   }).then(handleResponse).catch(handleNetworkError)
 
+/** POST /api/kuis/import-excel — import quiz from Excel file */
+export const importQuizExcel = (formData) => {
+  const headers = {
+    ...authHeader(),
+    'Accept': 'application/json',
+    'ngrok-skip-browser-warning': 'true',
+  }
+  return fetch(`${baseUrl}/api/kuis/import-excel`, {
+    method: 'POST',
+    headers,
+    body: formData,
+  }).then(handleResponse).catch(handleNetworkError)
+}
+
 /** GET /api/kuis/{id}/soal — get questions for a quiz */
 export const getSoalByKuis = (id) =>
   fetch(`${baseUrl}/api/kuis/${id}/soal`, {
     headers: { ...commonHeaders(), ...authHeader() },
   }).then(handleResponse).catch(handleNetworkError)
 
-/** PUT /api/soal/{id} — update a question */
-export const updateSoal = (id, payload) =>
-  fetch(`${baseUrl}/api/soal/${id}`, {
+/** PUT /api/soal/{id} — update a question
+ * Accepts either a plain object (JSON) or FormData (multipart, when gambar_soal is included).
+ * For FormData: uses POST + _method=PUT method spoofing (Laravel doesn't support PUT multipart).
+ * For plain objects: uses standard PUT with JSON. */
+export const updateSoal = (id, payload) => {
+  const isFormData = payload instanceof FormData
+  if (isFormData) {
+    // Method spoofing required: POST with _method=PUT field
+    if (!payload.has('_method')) payload.append('_method', 'PUT')
+    return fetch(`${baseUrl}/api/soal/${id}`, {
+      method: 'POST',  // Must stay POST — browser sets multipart Content-Type automatically
+      headers: { ...authHeader(), 'Accept': 'application/json', 'ngrok-skip-browser-warning': 'true' },
+      body: payload,
+    }).then(handleResponse).catch(handleNetworkError)
+  }
+  return fetch(`${baseUrl}/api/soal/${id}`, {
     method: 'PUT',
     headers: { ...commonHeaders(), ...authHeader() },
     body: JSON.stringify(payload),
   }).then(handleResponse).catch(handleNetworkError)
+}
 
 /** DELETE /api/soal/{id} — delete a question */
 export const deleteSoal = (id) =>

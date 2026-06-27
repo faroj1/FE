@@ -746,3 +746,294 @@
   }
 }
 
+/* Excel Import Feature Styles */
+.kk-page-header-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.kk-btn-import {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #f0fdf4;
+  color: #16a34a;
+  border: 1.5px solid #bbf7d0;
+  padding: 12px 22px;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 14.5px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+  box-shadow: 0 4px 10px rgba(22, 163, 74, 0.04);
+}
+
+.kk-btn-import:hover {
+  background: #dcfce7;
+  border-color: #86efac;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 14px rgba(22, 163, 74, 0.08);
+}
+
+.kk-btn-import:active {
+  transform: translateY(0);
+}
+
+.kk-import-modal {
+  max-width: 580px !important;
+}
+
+.kk-import-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 24px;
+  background: #f8fafc;
+  padding: 20px;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+}
+
+.kk-import-step {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+
+.kk-step-num {
+  width: 24px;
+  height: 24px;
+  border-radius: 55%;
+  background: #2563eb;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 800;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.kk-step-content {
+  flex: 1;
+}
+
+.kk-step-content strong {
+  display: block;
+  font-size: 14.5px;
+  color: #1e293b;
+  margin-bottom: 4px;
+}
+
+.kk-step-content p {
+  font-size: 13px;
+  color: #64748b;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.kk-btn-download-template {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  padding: 7px 14px;
+  background: #fff;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  color: #334155;
+  font-size: 12.5px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: all 0.15s;
+  cursor: pointer;
+}
+
+.kk-btn-download-template:hover {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+  color: #0f172a;
+}
+
+.kk-btn-download-template svg {
+  stroke: currentColor;
+}
+
+.kk-import-drag-zone {
+  border: 2px dashed #cbd5e1;
+  background: #fff;
+  border-radius: 16px;
+  padding: 32px 20px;
+  text-align: center;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  position: relative;
+}
+
+.kk-import-drag-zone.active {
+  border-color: #2563eb;
+  background: #eff6ff;
+}
+
+.kk-import-drag-zone:hover:not(.has-file) {
+  border-color: #94a3b8;
+  background: #fafbfc;
+}
+
+.kk-import-label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  width: 100%;
+}
+
+.kk-import-input {
+  display: none;
+}
+
+.kk-import-icon-wrap {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #f1f5f9;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+  transition: all 0.2s;
+}
+
+.kk-import-drag-zone.active .kk-import-icon-wrap {
+  background: #dbeafe;
+  color: #2563eb;
+}
+
+.kk-import-text-main {
+  display: block;
+  font-size: 14.5px;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 4px;
+}
+
+.kk-import-text-sub {
+  font-size: 12.5px;
+  color: #94a3b8;
+}
+
+.kk-import-drag-zone.has-file {
+  border-style: solid;
+  border-color: #bbf7d0;
+  background: #f0fdf4;
+}
+
+.kk-import-file-details {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  text-align: left;
+}
+
+.kk-file-icon {
+  color: #16a34a;
+  background: #dcfce7;
+  padding: 10px;
+  border-radius: 12px;
+  flex-shrink: 0;
+}
+
+.kk-file-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.kk-file-name {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: #1e293b;
+  word-break: break-all;
+  line-height: 1.3;
+}
+
+.kk-file-size {
+  font-size: 12.5px;
+  color: #64748b;
+  margin-top: 2px;
+}
+
+.kk-btn-remove-file {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.kk-btn-remove-file:hover {
+  background: #fee2e2;
+  color: #ef4444;
+}
+
+.kk-import-error-box {
+  margin-top: 20px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 12px;
+  padding: 14px 18px;
+  text-align: left;
+}
+
+.kk-import-error-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #dc2626;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.kk-import-error-list {
+  max-height: 150px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.kk-import-error-item {
+  font-size: 13px;
+  color: #b91c1c;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.kk-btn-import-submit {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.kk-spinner-btn {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+

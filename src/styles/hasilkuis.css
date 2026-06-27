@@ -177,7 +177,7 @@
 /* Stats Cards */
 .hk-stats-row {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 20px;
   margin-bottom: 36px;
 }
@@ -209,9 +209,10 @@
   flex-shrink: 0;
 }
 
-.hk-stat-icon.blue { background: #eff6ff; color: #2563eb; }
-.hk-stat-icon.green { background: #f0fdf4; color: #16a34a; }
+.hk-stat-icon.blue   { background: #eff6ff; color: #2563eb; }
+.hk-stat-icon.green  { background: #f0fdf4; color: #16a34a; }
 .hk-stat-icon.orange { background: #fff7ed; color: #ea580c; }
+.hk-stat-icon.purple { background: #f5f3ff; color: #7c3aed; }
 
 .hk-stat-label {
   font-size: 12px;
@@ -540,7 +541,7 @@
   .hk-sidebar { width: 100%; border-right: none; border-bottom: 1px solid #e2e8f0; padding: 20px 24px; }
   .hk-header-row { padding: 16px 20px 8px; }
   .hk-container { padding: 16px 20px; }
-  .hk-stats-row { grid-template-columns: 1fr; gap: 12px; }
+  .hk-stats-row { grid-template-columns: repeat(2, 1fr); gap: 12px; }
   .hk-podium { gap: 10px; height: auto; align-items: center; flex-direction: column; padding: 10px 0; }
   .hk-podium-pillar { display: none; }
   .hk-podium-card { max-width: 100%; width: 100%; margin-bottom: 16px; padding: 16px; }

@@ -2,6 +2,7 @@ import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { createQuiz, createSoal, logoutApi } from '../utils/api'
 import { clearToken, isAuthenticated } from '../utils/auth'
+import NotificationDropdown from '../components/NotificationDropdown'
 import '../styles/buatkuis.css'
 
 const ANSWER_LETTERS = ['A', 'B', 'C', 'D']
@@ -150,7 +151,10 @@ export default function BuatKuis() {
 
     if (!info.title.trim()) return setError('Judul kuis tidak boleh kosong.')
     if (!info.category) return setError('Kategori kuis wajib dipilih.')
-    if (questions.some(q => !q.text.trim())) return setError('Setiap soal harus memiliki pertanyaan.')
+    if (questions.some(q => !q.text.trim() && !q.image)) return setError('Setiap soal harus memiliki pertanyaan (teks atau gambar).')
+    if (questions.some(q => q.answers.some(a => !a.text.trim() && !a.image))) {
+      return setError('Setiap pilihan jawaban harus diisi teks atau gambar.')
+    }
     if (questions.some(q => !q.answers.some(a => a.is_correct))) return setError('Setiap soal harus memiliki jawaban yang benar.')
 
     setSubmitting(true)
@@ -184,17 +188,37 @@ export default function BuatKuis() {
         // Find the correct answer letter
         const correctAnswer = q.answers.find(a => a.is_correct)
 
+        const hasQuestionImage = !!q.image
+        const finalSoal = (!q.text || !q.text.trim()) && hasQuestionImage ? "-" : q.text
+
+        const getFinalAnswerText = (letter) => {
+          const ansObj = q.answers.find(a => a.letter === letter)
+          const text = ansObj?.text || ''
+          const hasImage = !!ansObj?.image
+          return (!text || !text.trim()) && hasImage ? "-" : text
+        }
+
+        const finalJawabanA = getFinalAnswerText('A')
+        const finalJawabanB = getFinalAnswerText('B')
+        const finalJawabanC = getFinalAnswerText('C')
+        const finalJawabanD = getFinalAnswerText('D')
+
         const soalPayload = {
           kuis_id: Number(kuisId),
-          soal_soal: q.text,
-          jawaban_a: q.answers.find(a => a.letter === 'A')?.text || '',
-          jawaban_b: q.answers.find(a => a.letter === 'B')?.text || '',
-          jawaban_c: q.answers.find(a => a.letter === 'C')?.text || '',
-          jawaban_d: q.answers.find(a => a.letter === 'D')?.text || '',
+          soal_soal: finalSoal,
+          jawaban_a: finalJawabanA,
+          jawaban_b: finalJawabanB,
+          jawaban_c: finalJawabanC,
+          jawaban_d: finalJawabanD,
           jawaban_benar: (correctAnswer?.letter || 'A').toLowerCase(),
           bobot_poin: Number(q.bobot),
           poin: Number(q.bobot),
           tipe_soal: 'pilihan_ganda',
+          gambar_soal: q.image || null,
+          gambar_jawaban_a: q.answers.find(a => a.letter === 'A')?.image || null,
+          gambar_jawaban_b: q.answers.find(a => a.letter === 'B')?.image || null,
+          gambar_jawaban_c: q.answers.find(a => a.letter === 'C')?.image || null,
+          gambar_jawaban_d: q.answers.find(a => a.letter === 'D')?.image || null,
         }
 
         const soalRes = await createSoal(soalPayload)
@@ -263,12 +287,7 @@ export default function BuatKuis() {
       {/* ─── Main ─── */}
       <main className="bk-main">
         <header className="bk-header-row">
-          <button className="bk-icon-btn" aria-label="Notifikasi">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-              <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-            </svg>
-          </button>
+          <NotificationDropdown buttonClass="bk-icon-btn" />
           <div className="bk-icon-btn">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="12" cy="12" r="10" /><path d="M8 14s1.5 2 4 2 4-2 4-2" />
