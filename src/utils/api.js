@@ -35,7 +35,7 @@ const commonHeaders = () => ({
 // ─── Response Handling ────────────────────────────────────────────────────────
 const handleResponse = async (res) => {
   const text = await res.text().catch(() => '')
-  let data = null
+  let data
   try {
     data = text ? JSON.parse(text) : null
   } catch {
@@ -345,4 +345,3 @@ export const uploadAvatar = async (formData) => {
   }
   return res
 }
-
