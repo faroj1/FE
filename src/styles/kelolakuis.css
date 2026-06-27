@@ -622,6 +622,11 @@
   }
   .kk-header-row {
     padding: 16px 20px 8px;
+    justify-content: space-between;
+  }
+  .kk-icon-btn {
+    width: 40px;
+    height: 40px;
   }
   .kk-container {
     padding: 16px 20px;
@@ -632,7 +637,13 @@
     gap: 16px;
     margin-bottom: 24px;
   }
-  .kk-btn-create {
+  .kk-page-header-actions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  .kk-btn-create,
+  .kk-btn-import {
     justify-content: center;
     width: 100%;
   }
@@ -645,6 +656,18 @@
     justify-content: center;
   }
   .kk-search {
+    width: 100%;
+  }
+  .kk-table-wrap {
+    overflow-x: auto;
+  }
+  .kk-form-row {
+    grid-template-columns: 1fr;
+  }
+  .kk-modal {
+    padding: 24px;
+  }
+  .kk-page-header-actions {
     width: 100%;
   }
   .kk-table thead {

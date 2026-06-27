@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import AuthCard from '../components/AuthCard'
-import { register } from '../utils/api'
+import { register, me } from '../utils/api'
 import { saveToken, saveUser, decodeToken } from '../utils/auth'
+import Swal from 'sweetalert2'
 
 export default function Register() {
   const [email, setEmail] = useState('')
@@ -24,24 +25,72 @@ export default function Register() {
     setLoading(false)
 
     if (res.ok) {
-      // Some backends return a JWT token on registration
       const token =
         res.data?.token ||
         res.data?.access_token ||
         res.data?.data?.token ||
         res.data?.data?.access_token
 
+      const responseUser =
+        res.data?.user ||
+        res.data?.data?.user ||
+        (res.data?.data && typeof res.data.data === 'object' && ('email' in res.data.data || 'email_verified' in res.data.data || 'name' in res.data.data)
+          ? res.data.data
+          : null) ||
+        (res.data && typeof res.data === 'object' && ('email' in res.data || 'email_verified' in res.data || 'name' in res.data)
+          ? res.data
+          : null)
+
       if (token) {
         saveToken(token)
-        const payload = decodeToken(token)
-        if (payload) saveUser({ id: payload.sub || payload.id, name: payload.name, email: payload.email })
-        navigate('/dashboard')
+
+        if (responseUser) {
+          saveUser(responseUser)
+        } else {
+          const payload = decodeToken(token)
+          if (payload) {
+            saveUser({ id: payload.sub || payload.id, name: payload.name, email: payload.email })
+          }
+        }
+
+        let finalUser = responseUser
+        try {
+          const meRes = await me()
+          if (meRes.ok) {
+            const user = meRes.data?.data || meRes.data
+            if (user) {
+              saveUser(user)
+              finalUser = user
+            }
+          }
+        } catch (e) {
+          console.warn('[Register] /api/me failed, using cached registration response')
+        }
+
+        if (finalUser?.email_verified === false) {
+          await Swal.fire({
+            icon: 'success',
+            title: 'Pendaftaran Sukses! 🎉',
+            text: 'Satu langkah lagi! Kami telah mengirimkan link aktivasi ke email Anda. Silakan cek Inbox atau folder Spam.',
+            confirmButtonText: 'Siap!',
+            confirmButtonColor: '#667eea',
+          })
+          window.location.href = '/login'
+        } else {
+          navigate('/dashboard')
+        }
       } else {
-        // No token on register — redirect to login
-        navigate('/login')
+        await Swal.fire({
+          icon: 'success',
+          title: 'Pendaftaran Sukses! 🎉',
+          text: 'Satu langkah lagi! Kami telah mengirimkan link aktivasi ke email Anda. Silakan cek Inbox atau folder Spam.',
+          confirmButtonText: 'Siap!',
+          confirmButtonColor: '#667eea',
+        })
+        window.location.href = '/login'
       }
     } else {
-      setError(res.data?.message || `Registrasi gagal (status ${res.status})`)
+      setError(res.message || res.data?.message || `Registrasi gagal (status ${res.status})`)
     }
   }
 

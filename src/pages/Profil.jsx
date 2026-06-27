@@ -51,6 +51,14 @@ export default function Profil() {
     setTimeout(() => setToast({ show: false, message: '', type: 'success' }), 3000)
   }
 
+  const getInitial = () => {
+    if (!user?.name) return 'U'
+    const names = user.name.trim().split(' ').filter(Boolean)
+    if (names.length === 0) return 'U'
+    if (names.length === 1) return names[0].slice(0, 1).toUpperCase()
+    return (names[0][0] + names[names.length - 1][0]).toUpperCase()
+  }
+
   // Fetch fresh profile
   useEffect(() => {
     if (!isAuthenticated()) {
@@ -237,14 +245,6 @@ export default function Profil() {
     }
   }
 
-  // Get User Initial
-  const getInitial = () => {
-    if (user?.name) {
-      return user.name.charAt(0).toUpperCase()
-    }
-    return 'G'
-  }
-
   return (
     <div className="profile-root">
       {/* Sidebar */}
@@ -298,12 +298,8 @@ export default function Profil() {
       <main className="profile-main">
         <header className="profile-header-row">
           <NotificationDropdown buttonClass="profile-icon-btn" />
-          <div className="profile-icon-btn">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="10" />
-              <path d="M8 14s1.5 2 4 2 4-2 4-2" />
-              <line x1="9" y1="9" x2="9.01" y2="9" /><line x1="15" y1="9" x2="15.01" y2="9" />
-            </svg>
+          <div className="profile-icon-btn" style={{ width: 44, height: 44, borderRadius: '50%', background: '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700, color: '#334155' }}>
+            {getInitial()}
           </div>
         </header>
 
