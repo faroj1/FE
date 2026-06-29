@@ -3,7 +3,7 @@
   width: 100%;
   min-height: 100vh;
   background: #fafbfc;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
   color: #1e293b;
 }
 
@@ -480,16 +480,6 @@
   font-weight: 700;
   color: #374151;
   margin-bottom: 6px;
-}
-
-.ql-modal-quiz-name {
-  background: #f8fafc;
-  border: 1.5px solid #e2e8f0;
-  border-radius: 10px;
-  padding: 10px 14px;
-  font-size: 14px;
-  font-weight: 600;
-  color: #334155;
 }
 
 .ql-input {

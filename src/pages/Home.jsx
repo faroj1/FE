@@ -1,6 +1,8 @@
 import { useState } from 'react'
+import Swal from 'sweetalert2'
 import '../styles/home.css'
 import { Link, useNavigate } from 'react-router-dom'
+import { joinQuizByCode } from '../utils/api'
 
 export default function Home() {
   const [nama, setNama] = useState('')
@@ -8,20 +10,43 @@ export default function Home() {
   const [error, setError] = useState(null)
   const navigate = useNavigate()
 
-  const handleJoinQuiz = (e) => {
+  const handleJoinQuiz = async (e) => {
     e.preventDefault()
     setError(null)
 
     if (!nama.trim()) return setError('Silakan masukkan nama Anda.')
     if (!kode.trim()) return setError('Silakan masukkan kode kuis.')
 
-    // Save participant name to sessionStorage
-    sessionStorage.setItem('quiz_participant_name', nama.trim())
-    
-    // Navigate to quiz page with kode
-    navigate(`/kerjakan-kuis/${kode.trim().toUpperCase()}`, {
-      state: { nama: nama.trim() }
-    })
+    const trimmedKode = kode.trim().toUpperCase()
+
+    try {
+      const res = await joinQuizByCode(trimmedKode)
+      if (!res.ok) {
+        if (res.status === 404) {
+          await Swal.fire({
+            icon: 'error',
+            title: 'Kuis Tidak Ditemukan',
+            text: 'Maaf, kode kuis yang Anda masukkan salah atau sudah tidak aktif. Silakan periksa kembali kode Anda.',
+            confirmButtonText: 'Coba Lagi',
+            confirmButtonColor: '#2563eb',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+          })
+          return
+        }
+
+        setError(res.data?.message || `Gagal memuat kuis (${res.status || 'error jaringan'}).`)
+        return
+      }
+
+      // Save participant name to sessionStorage and navigate
+      sessionStorage.setItem('quiz_participant_name', nama.trim())
+      navigate(`/kerjakan-kuis/${trimmedKode}`, {
+        state: { nama: nama.trim() }
+      })
+    } catch (err) {
+      setError('Terjadi kesalahan saat memeriksa kode kuis. Silakan coba lagi.')
+    }
   }
 
   return (
@@ -53,10 +78,10 @@ export default function Home() {
                 <div className="field">
                   <label>Kode Kuis</label>
                   <input 
-                    placeholder="Contoh: A1B2C3" 
+                    placeholder="000 - 000" 
                     value={kode} 
                     onChange={(e) => setKode(e.target.value.toUpperCase())}
-                    maxLength={10}
+                    maxLength={9}
                     style={{ textTransform: 'uppercase', letterSpacing: '2px', fontWeight: 700 }}
                   />
                 </div>

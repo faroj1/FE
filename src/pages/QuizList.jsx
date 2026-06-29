@@ -293,11 +293,6 @@ export default function QuizList({ searchTerm }) {
             </p>
 
             <div className="ql-modal-field">
-              <label>Nama Kuis</label>
-              <div className="ql-modal-quiz-name">{selectedQuiz.title}</div>
-            </div>
-
-            <div className="ql-modal-field">
               <label>Nama Kamu</label>
               <input
                 type="text"

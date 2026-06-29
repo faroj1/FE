@@ -78,6 +78,17 @@ export default function KelolaKuis() {
     }
   }
 
+  const isPrivateQuiz = (quiz) => {
+    const access = (quiz?.akses || quiz?.access || '').toString().toLowerCase()
+    return access === 'private' || access === 'privat'
+  }
+
+  const openPrivateLobby = (quiz) => {
+    const quizId = quiz.kuis_id || quiz.id
+    setOpenMenuId(null)
+    navigate(`/kelola-kuis/detail/${quizId}`, { state: { quiz, lobby: true } })
+  }
+
   useEffect(() => {
     if (!isAuthenticated()) {
       navigate('/login', { replace: true })
@@ -487,6 +498,17 @@ export default function KelolaKuis() {
                                 Lihat Hasil
                               </button>
                             )}
+                            {isPrivateQuiz(q) && (
+                              <button
+                                className="kk-dropdown-item start"
+                                onClick={() => openPrivateLobby(q)}
+                              >
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                  <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                                </svg>
+                                Mulai Kuis
+                              </button>
+                            )}
                             <button className="kk-dropdown-item" onClick={() => { setOpenMenuId(null); navigate(`/kelola-kuis/detail/${q.kuis_id || q.id}?edit=true`, { state: { quiz: q } }); }}>
                               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                                 <path d="M12 20h9"></path>
@@ -494,7 +516,7 @@ export default function KelolaKuis() {
                               </svg>
                               Edit
                             </button>
-                            {!q.is_published && (
+                            {!isPrivateQuiz(q) && !q.is_published && (
                               <button className="kk-dropdown-item publish" onClick={() => handlePublish(q.kuis_id || q.id)}>
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                                   <path d="M22 2L11 13"></path>

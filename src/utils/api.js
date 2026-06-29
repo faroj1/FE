@@ -105,13 +105,74 @@ export const getPublicQuizDetail = (id) =>
   }).then(handleResponse).catch(handleNetworkError)
 
 /** POST /api/kuis/join — join private quiz via code (no auth required) */
-export const joinQuizByCode = (kodeKuis) =>
+export const joinQuizByCode = (kodeKuis, namaPeserta = '') =>
   fetch(`${baseUrl}/api/kuis/join`, {
     method: 'POST',
     headers: commonHeaders(),
-    body: JSON.stringify({ kode_kuis: kodeKuis }),
+    body: JSON.stringify({
+      kode_kuis: kodeKuis,
+      ...(namaPeserta ? { nama_peserta: namaPeserta } : {}),
+    }),
   }).then(handleResponse).catch(handleNetworkError)
 
+/** POST /api/kuis/leave — leave private quiz lobby (no auth required) */
+export const leaveQuizByCode = async (kodeKuis, namaPeserta = '', kuisId = null) => {
+  const payload = {
+    kode_kuis: kodeKuis,
+    ...(namaPeserta ? { nama_peserta: namaPeserta } : {}),
+  }
+
+  let res = { ok: false, status: 404 }
+
+  if (kuisId) {
+    res = await fetch(`${baseUrl}/api/kuis/${kuisId}/leave`, {
+      method: 'POST',
+      headers: commonHeaders(),
+      body: JSON.stringify(payload),
+    }).then(handleResponse).catch(handleNetworkError)
+  }
+
+  if (!res.ok && res.status === 404) {
+    res = await fetch(`${baseUrl}/api/kuis/leave`, {
+      method: 'POST',
+      headers: commonHeaders(),
+      body: JSON.stringify(payload),
+    }).then(handleResponse).catch(handleNetworkError)
+  }
+
+  if (!res.ok && res.status === 404) {
+    res = await fetch(`${baseUrl}/api/kuis/keluar`, {
+      method: 'POST',
+      headers: commonHeaders(),
+      body: JSON.stringify(payload),
+    }).then(handleResponse).catch(handleNetworkError)
+  }
+
+  return res
+}
+
+/** POST /api/kuis/{id}/start — start a private quiz (teacher, authenticated) */
+export const startQuiz = (id) =>
+  fetch(`${baseUrl}/api/kuis/${id}/start`, {
+    method: 'POST',
+    headers: { ...commonHeaders(), ...authHeader() },
+    body: JSON.stringify({}),
+  }).then(handleResponse).catch(handleNetworkError)
+
+/** POST /api/kuis/{id}/end — end a private quiz (teacher, authenticated) */
+export const endQuiz = async (id) => {
+  let res = await fetch(`${baseUrl}/api/kuis/${id}/end`, {
+    method: 'POST',
+    headers: { ...commonHeaders(), ...authHeader() },
+    body: JSON.stringify({}),
+  }).then(handleResponse).catch(handleNetworkError)
+
+  if (!res.ok && res.status === 404) {
+    res = await updateQuiz(id, { status: 'selesai' })
+  }
+
+  return res
+}
 
 /** GET /api/kuis — public quiz list */
 export const getQuizzes = () =>
@@ -228,6 +289,24 @@ export const submitQuiz = (id, payload) =>
   }).then(handleResponse).catch(handleNetworkError)
 
 /** POST /api/kuis/{id}/publish — publish a quiz */
+export const submitQuizBeacon = (id, payload) => {
+  const url = `${baseUrl}/api/kuis/${id}/submit`
+  const body = JSON.stringify(payload)
+
+  if (navigator.sendBeacon) {
+    const blob = new Blob([body], { type: 'application/json' })
+    return navigator.sendBeacon(url, blob)
+  }
+
+  fetch(url, {
+    method: 'POST',
+    headers: commonHeaders(),
+    body,
+    keepalive: true,
+  }).catch(handleNetworkError)
+  return true
+}
+
 export const publishQuiz = (id) =>
   fetch(`${baseUrl}/api/kuis/${id}/publish`, {
     method: 'POST',
