@@ -1,7 +1,9 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useParams, useNavigate, useLocation, useSearchParams } from 'react-router-dom'
-import { getMyQuizzes, getSoalByKuis, updateQuiz, deleteQuiz, updateSoal, deleteSoal, createSoal, logoutApi, getImageUrl } from '../utils/api'
+import Swal from 'sweetalert2'
+import { getMyQuizzes, getQuizDetail, joinQuizByCode, getSoalByKuis, getQuizHasil, updateQuiz, deleteQuiz, updateSoal, deleteSoal, createSoal, logoutApi, getImageUrl, startQuiz, endQuiz, publishQuiz } from '../utils/api'
 import { clearToken, isAuthenticated } from '../utils/auth'
+import { listenQuizParticipants, disconnectQuizChannel } from '../utils/echo'
 import NotificationDropdown from '../components/NotificationDropdown'
 import '../styles/detailkuis.css'
 
@@ -19,6 +21,11 @@ export default function DetailKuis() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [submitting, setSubmitting] = useState(false)
+  const [startingQuiz, setStartingQuiz] = useState(false)
+  const [lobbyParticipants, setLobbyParticipants] = useState([])
+  const [quizStarted, setQuizStarted] = useState(false)
+  const [progressRows, setProgressRows] = useState([])
+  const [progressLoading, setProgressLoading] = useState(false)
   const [openQuestionMenuId, setOpenQuestionMenuId] = useState(null)
   const [showLogoutModal, setShowLogoutModal] = useState(false)
   const questionMenuRef = useRef(null)
@@ -65,6 +72,12 @@ export default function DetailKuis() {
   }
 
   const fetchQuizFromList = useCallback(async () => {
+    const detailRes = await getQuizDetail(id)
+    if (detailRes.ok) {
+      const detailPayload = detailRes.data?.data || detailRes.data || {}
+      return detailPayload.kuis || detailPayload
+    }
+
     const listRes = await getMyQuizzes()
     if (listRes.ok) {
       const list = listRes.data?.data || listRes.data || []
@@ -88,12 +101,9 @@ export default function DetailKuis() {
 
     const init = async () => {
       setLoading(true)
-      let quizData = quiz
-      if (!quizData) {
-        quizData = await fetchQuizFromList()
-        if (!quizData) { setError('Kuis tidak ditemukan.'); setLoading(false); return }
-        setQuiz(quizData)
-      }
+      const quizData = await fetchQuizFromList()
+      if (!quizData) { setError('Kuis tidak ditemukan.'); setLoading(false); return }
+      setQuiz(prev => ({ ...(prev || {}), ...quizData }))
       await fetchSoal()
       setLoading(false)
     }
@@ -101,6 +111,52 @@ export default function DetailKuis() {
   }, [id, navigate]) // eslint-disable-line
 
   const handleLogout = async () => { await logoutApi(); clearToken(); navigate('/login') }
+
+  const confirmGuruExit = useCallback(async () => {
+    const result = await Swal.fire({
+      title: 'Akhiri kuis?',
+      text: quizStarted
+        ? 'Kuis akan diakhiri dan peserta akan keluar otomatis. Lanjutkan?'
+        : 'Kuis akan diakhiri dan lobby ditutup. Lanjutkan?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Ya, akhiri',
+      cancelButtonText: 'Batal',
+      confirmButtonColor: '#2563eb',
+      cancelButtonColor: '#64748b',
+      reverseButtons: true,
+    })
+
+    if (result.isConfirmed) {
+      const quizId = quiz?.kuis_id || quiz?.id || id
+      const res = await endQuiz(quizId)
+      if (!res.ok) {
+        showToast(res.data?.message || res.message || `Gagal mengakhiri kuis (${res.status})`, 'error')
+        return
+      }
+      navigate('/kelola-kuis')
+    }
+  }, [navigate, quizStarted, quiz, id])
+
+  useEffect(() => {
+    if (!quiz || !isPrivateQuiz(quiz) || isEditMode) return undefined
+
+    window.history.pushState({ guruBackGuard: true }, '', window.location.href)
+    const handleBack = () => {
+      window.history.pushState({ guruBackGuard: true }, '', window.location.href)
+      Swal.fire({
+        icon: 'info',
+        title: 'Tidak bisa kembali',
+        text: 'Gunakan tombol Keluar untuk mengakhiri kuis.',
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 1800,
+      })
+    }
+    window.addEventListener('popstate', handleBack)
+    return () => window.removeEventListener('popstate', handleBack)
+  }, [quiz, isEditMode])
 
   const formatDate = (d) => {
     if (!d) return '-'
@@ -121,6 +177,179 @@ export default function DetailKuis() {
     if (v === 'finished' || v === 'selesai') return 'SELESAI'
     return 'DRAFT'
   }
+
+  const isPrivateQuiz = (quiz) => {
+    const akses = (quiz?.akses || quiz?.access || '').toString().toLowerCase()
+    return akses === 'private' || akses === 'privat'
+  }
+
+  const normalizeParticipants = (source) => {
+    if (!Array.isArray(source)) return []
+    return Array.from(new Set(source
+      .map(item => {
+        if (typeof item === 'string') return item
+        return item?.nama_peserta || item?.nama || item?.name || item?.peserta || ''
+      })
+      .filter(Boolean)))
+  }
+
+  const getEventParticipantList = (event) => normalizeParticipants(
+    event?.peserta ||
+    event?.participants ||
+    event?.peserta_bergabung ||
+    event?.pesertaBergabung ||
+    []
+  )
+
+  const hasParticipantListPayload = (event) => (
+    Array.isArray(event?.peserta) ||
+    Array.isArray(event?.participants) ||
+    Array.isArray(event?.peserta_bergabung) ||
+    Array.isArray(event?.pesertaBergabung)
+  )
+
+  const getLeavingParticipantName = (event) => {
+    const value =
+      event?.nama_peserta ||
+      event?.namaPeserta ||
+      event?.nama ||
+      event?.name ||
+      event?.peserta_keluar ||
+      event?.pesertaKeluar ||
+      event?.participant
+
+    if (!value) return ''
+    if (typeof value === 'string') return value
+    return value?.nama_peserta || value?.nama || value?.name || value?.peserta || ''
+  }
+
+  const isLeavingParticipantEvent = (event) => {
+    const eventName = (
+      event?.__eventName ||
+      event?.event ||
+      event?.type ||
+      event?.action ||
+      ''
+    ).toString().toLowerCase()
+    return eventName.includes('keluar') || eventName.includes('meninggalkan') || eventName.includes('leave') || eventName.includes('left')
+  }
+
+  const fetchProgress = useCallback(async (silent = false) => {
+    if (!silent) setProgressLoading(true)
+    const res = await getQuizHasil(id)
+    if (res.ok) {
+      const rows = Array.isArray(res.data?.data) ? res.data.data : []
+      setProgressRows(rows)
+    }
+    if (!silent) setProgressLoading(false)
+  }, [id])
+
+  const fetchLobbyParticipants = useCallback(async () => {
+    const res = await getQuizDetail(id)
+    if (!res.ok) return
+
+    const payload = res.data?.data || res.data || {}
+    const kuisData = payload.kuis || payload
+    let nextParticipants = normalizeParticipants(
+      payload.peserta_bergabung ||
+      payload.pesertaBergabung ||
+      payload.participants ||
+      payload.peserta ||
+      kuisData.peserta_bergabung ||
+      kuisData.pesertaBergabung ||
+      kuisData.participants ||
+      kuisData.peserta ||
+      []
+    )
+    let hasParticipantField =
+      payload.peserta_bergabung !== undefined ||
+      payload.pesertaBergabung !== undefined ||
+      payload.participants !== undefined ||
+      payload.peserta !== undefined ||
+      kuisData.peserta_bergabung !== undefined ||
+      kuisData.pesertaBergabung !== undefined ||
+      kuisData.participants !== undefined ||
+      kuisData.peserta !== undefined
+
+    const quizCode = kuisData.kode_kuis || kuisData.code || quiz?.kode_kuis || quiz?.code
+    if (!hasParticipantField && quizCode) {
+      const joinRes = await joinQuizByCode(quizCode)
+      if (joinRes.ok) {
+        const joinPayload = joinRes.data?.data || joinRes.data || {}
+        const joinKuisData = joinPayload.kuis || joinPayload
+        nextParticipants = normalizeParticipants(
+          joinPayload.peserta_bergabung ||
+          joinPayload.pesertaBergabung ||
+          joinPayload.participants ||
+          joinPayload.peserta ||
+          joinKuisData.peserta_bergabung ||
+          joinKuisData.pesertaBergabung ||
+          joinKuisData.participants ||
+          joinKuisData.peserta ||
+          []
+        )
+        hasParticipantField =
+          joinPayload.peserta_bergabung !== undefined ||
+          joinPayload.pesertaBergabung !== undefined ||
+          joinPayload.participants !== undefined ||
+          joinPayload.peserta !== undefined ||
+          joinKuisData.peserta_bergabung !== undefined ||
+          joinKuisData.pesertaBergabung !== undefined ||
+          joinKuisData.participants !== undefined ||
+          joinKuisData.peserta !== undefined
+      }
+    }
+
+    if (hasParticipantField) setLobbyParticipants(nextParticipants)
+  }, [id, quiz])
+
+  useEffect(() => {
+    if (!quiz || !isPrivateQuiz(quiz) || isEditMode) return undefined
+
+    const quizId = quiz.kuis_id || quiz.id
+    if (!quizId) return undefined
+
+    const initialParticipants = normalizeParticipants(
+      quiz.peserta_bergabung ||
+      quiz.pesertaBergabung ||
+      quiz.peserta ||
+      quiz.participants ||
+      []
+    )
+    if (initialParticipants.length > 0) setLobbyParticipants(initialParticipants)
+    fetchLobbyParticipants()
+
+    listenQuizParticipants(quizId, (event) => {
+      if (hasParticipantListPayload(event)) {
+        setLobbyParticipants(getEventParticipantList(event))
+        return
+      }
+
+      if (!isLeavingParticipantEvent(event)) return
+
+      const leavingName = getLeavingParticipantName(event)
+      if (!leavingName) return
+
+      setLobbyParticipants(prevParticipants => prevParticipants.filter(name => name !== leavingName))
+    })
+
+    return () => disconnectQuizChannel(quizId)
+  }, [quiz, isEditMode, fetchLobbyParticipants])
+
+  useEffect(() => {
+    if (!quiz || !isPrivateQuiz(quiz) || isEditMode || quizStarted) return undefined
+
+    const timer = setInterval(fetchLobbyParticipants, 5000)
+    return () => clearInterval(timer)
+  }, [quiz, isEditMode, quizStarted, fetchLobbyParticipants])
+
+  useEffect(() => {
+    if (!quizStarted || !quiz || !isPrivateQuiz(quiz) || isEditMode) return undefined
+
+    fetchProgress()
+    const timer = setInterval(() => fetchProgress(true), 5000)
+    return () => clearInterval(timer)
+  }, [quizStarted, quiz, isEditMode, fetchProgress])
 
   // ─── Open Modals ─────────────────────────────────────────────────────
   const openEditQuiz = () => {
@@ -229,6 +458,52 @@ export default function DetailKuis() {
     }
   }
 
+  const handleStartQuiz = async () => {
+    setStartingQuiz(true)
+    const quizId = quiz.kuis_id || quiz.id
+
+    let publishRes = null
+    if (isPrivateQuiz(quiz)) {
+      publishRes = await publishQuiz(quizId)
+    }
+
+    const publishMessage = (publishRes?.data?.message || publishRes?.message || '').toLowerCase()
+    const publishIsAlreadyDone = publishMessage.includes('sudah') || publishMessage.includes('already')
+    let res = !publishRes || publishRes.ok || publishIsAlreadyDone
+      ? await startQuiz(quizId)
+      : publishRes
+
+    const needsPublish = !res.ok && (res.data?.message || res.message || '').toLowerCase().includes('publik')
+    if (needsPublish) {
+      publishRes = await publishQuiz(quizId)
+      const publishMessage = (publishRes.data?.message || publishRes.message || '').toLowerCase()
+      const retryPublishIsAlreadyDone = publishMessage.includes('sudah') || publishMessage.includes('already')
+      if (publishRes.ok || retryPublishIsAlreadyDone) {
+        res = await startQuiz(quizId)
+      } else {
+        res = publishRes
+      }
+    }
+
+    setStartingQuiz(false)
+    if (res.ok) {
+      const startPayload = res.data?.data || res.data || {}
+      const publishPayload = publishRes?.data?.data || publishRes?.data || {}
+      const nextPayload = { ...publishPayload, ...startPayload }
+      setQuiz(prev => ({
+        ...prev,
+        ...nextPayload,
+        status: 'aktif',
+        is_published: true,
+        kode_kuis: nextPayload.kode_kuis || nextPayload.code || prev.kode_kuis,
+      }))
+      setQuizStarted(true)
+      showToast('Kuis dimulai. Peserta akan masuk otomatis!')
+    } else {
+      showToast(res.data?.message || res.message || `Gagal memulai kuis (${res.status})`, 'error')
+    }
+  }
+
   const handleSaveSoal = async (e) => {
     e.preventDefault()
     setSubmitting(true); setModalError(null)
@@ -334,6 +609,120 @@ export default function DetailKuis() {
     </div>
   )
 
+  if (isPrivateQuiz(quiz) && !isEditMode) {
+    const quizTitle = quiz?.judul || quiz?.title || 'Kuis Privat'
+    const quizDuration = quiz?.soal_waktu || quiz?.time_limit || 15
+    const totalQuestions = quiz?.jumlah_soal || quiz?.total_soal || questions.length || 0
+    const finishedNames = progressRows.map(row => row?.nama_peserta || row?.nama || row?.name || '').filter(Boolean)
+    const allParticipantNames = Array.from(new Set([...lobbyParticipants, ...finishedNames]))
+    const progressByName = new Map(progressRows.map(row => [row?.nama_peserta || row?.nama || row?.name || '', row]))
+    const workingCount = Math.max(allParticipantNames.length - progressRows.length, 0)
+
+    return (
+      <div className="dk-lobby-root">
+        <header className="dk-lobby-topbar">
+          <div className="dk-lobby-brand" onClick={confirmGuruExit}>KuisKita</div>
+          <div className="dk-lobby-topbar-title">{quizTitle}</div>
+          <button className="dk-lobby-exit" onClick={confirmGuruExit}>Keluar</button>
+        </header>
+
+        {!quizStarted ? (
+          <main className="dk-lobby-page">
+            <section className="dk-lobby-card">
+              <div className="dk-lobby-hero">
+                <div className="dk-lobby-icon">
+                  <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M6 2h12" /><path d="M6 22h12" /><path d="M8 2c0 5 8 5 8 10s-8 5-8 10" /><path d="M16 2c0 5-8 5-8 10s8 5 8 10" />
+                  </svg>
+                </div>
+                <div className="dk-lobby-status"><span />Menunggu Guru Memulai...</div>
+                <p>Harap sabar, kuis akan segera dimulai.</p>
+              </div>
+
+              <div className="dk-lobby-body">
+                <h1>{quizTitle}</h1>
+                <div className="dk-lobby-meta">
+                  <span>{totalQuestions} Soal</span>
+                  <span>{quizDuration} Menit</span>
+                </div>
+
+                <div className="dk-lobby-participants">
+                  <div className="dk-lobby-participants-head">
+                    <strong>Peserta Bergabung</strong>
+                    <span>{lobbyParticipants.length} Peserta</span>
+                  </div>
+                  <div className="dk-lobby-participants-list">
+                    {lobbyParticipants.length > 0 ? lobbyParticipants.map((name, idx) => (
+                      <div key={`${name}-${idx}`} className="dk-lobby-participant">{name}</div>
+                    )) : (
+                      <div className="dk-lobby-empty">Belum ada peserta yang bergabung.</div>
+                    )}
+                  </div>
+                  <div className="dk-lobby-actions">
+                    <button className="dk-lobby-copy" onClick={() => navigator.clipboard.writeText(quiz?.kode_kuis || quiz?.code || '')}>
+                      Salin Kode
+                    </button>
+                    <button className="dk-lobby-start" onClick={handleStartQuiz} disabled={startingQuiz}>
+                      {startingQuiz ? 'Memulai...' : 'Mulai Kuis'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </section>
+          </main>
+        ) : (
+          <main className="dk-progress-page">
+            <section className="dk-progress-header">
+              <div>
+                <p>Progress Kuis</p>
+                <h1>{quizTitle}</h1>
+              </div>
+              <button className="dk-progress-result-btn" onClick={() => navigate(`/kelola-kuis/hasil/${quiz.kuis_id || quiz.id}`, { state: { quiz } })}>
+                Lihat Hasil Lengkap
+              </button>
+            </section>
+
+            <section className="dk-progress-stats">
+              <div><span>{allParticipantNames.length}</span><p>Peserta Masuk</p></div>
+              <div><span>{workingCount}</span><p>Sedang Mengerjakan</p></div>
+              <div><span>{progressRows.length}</span><p>Selesai</p></div>
+            </section>
+
+            <section className="dk-progress-panel">
+              <div className="dk-progress-panel-head">
+                <strong>Daftar Progress Peserta</strong>
+                <span>{progressLoading ? 'Memuat...' : 'Refresh otomatis'}</span>
+              </div>
+              <div className="dk-progress-list">
+                {allParticipantNames.length > 0 ? allParticipantNames.map((name, idx) => {
+                  const result = progressByName.get(name)
+                  const isDone = Boolean(result)
+                  const correct = result?.jumlah_benar ?? result?.benar ?? '-'
+                  const total = result?.total_soal ?? totalQuestions
+                  const score = result?.total_skor ?? result?.skor ?? '-'
+                  return (
+                    <div key={`${name}-${idx}`} className="dk-progress-row">
+                      <div className="dk-progress-avatar">{name.charAt(0).toUpperCase()}</div>
+                      <div className="dk-progress-name">
+                        <strong>{name}</strong>
+                        <span>{isDone ? `${correct}/${total} benar - skor ${score}` : 'Sedang mengerjakan'}</span>
+                      </div>
+                      <div className={`dk-progress-badge ${isDone ? 'done' : 'working'}`}>
+                        {isDone ? 'Selesai' : 'Mengerjakan'}
+                      </div>
+                    </div>
+                  )
+                }) : (
+                  <div className="dk-progress-empty">Belum ada peserta yang masuk.</div>
+                )}
+              </div>
+            </section>
+          </main>
+        )}
+      </div>
+    )
+  }
+
   return (
     <div className="dk-root">
       {/* Sidebar */}
@@ -405,6 +794,40 @@ export default function DetailKuis() {
                 <span className="dk-badge-date">Dibuat: {formatDate(quiz.tgl_dibuat || quiz.created_at)}</span>
               </div>
             </div>
+
+            {isPrivateQuiz(quiz) && !isEditMode && (
+              <div className="dk-private-waiting-card">
+                <div className="dk-private-waiting-info">
+                  <div>
+                    <div className="dk-private-waiting-label">Menunggu murid bergabung</div>
+                    <div className="dk-private-waiting-desc">Bagikan kode kuis kepada siswa, lalu mulai kuis saat semua sudah siap.</div>
+                  </div>
+                  <div>
+                    <div className="dk-private-waiting-code">Kode: <strong>{quiz.kode_kuis || '—'}</strong></div>
+                    <button className="dk-btn-add-soal" onClick={handleStartQuiz} disabled={startingQuiz}>
+                      {startingQuiz ? 'Sedang memulai...' : 'Mulai Kuis'}
+                    </button>
+                  </div>
+                </div>
+                <div className="dk-private-participants-panel">
+                  <div className="dk-private-participants-header">
+                    <span>Peserta Bergabung</span>
+                    <strong>{lobbyParticipants.length} Peserta</strong>
+                  </div>
+                  {lobbyParticipants.length > 0 ? (
+                    <div className="dk-private-participants-list">
+                      {lobbyParticipants.map((name, idx) => (
+                        <div key={`${name}-${idx}`} className="dk-private-participant-item">
+                          <span>{idx + 1}.</span> {name}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="dk-private-participants-empty">Belum ada peserta yang bergabung.</div>
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* Action buttons */}
             {!isEditMode ? (

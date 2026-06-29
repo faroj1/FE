@@ -24,10 +24,11 @@ function App() {
   const isBerandaActive = location.pathname === '/'
   const isDaftarKuisActive = location.pathname === '/daftar-kuis'
   const isDashboard = location.pathname.startsWith('/dashboard') || location.pathname.startsWith('/kelola-kuis') || location.pathname.startsWith('/buat-kuis') || location.pathname.startsWith('/profil') || location.pathname.startsWith('/bantuan')
+  const isQuizPage = location.pathname.startsWith('/kerjakan-kuis')
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', fontFamily: "'Inter', sans-serif" }}>
-      {!isDashboard && (
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+      {!isDashboard && !isQuizPage && (
         <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 40px', borderBottom: '1px solid #f1f5f9', background: '#ffffff', position: 'sticky', top: 0, zIndex: 100 }}>
           <div style={{ display: 'flex', gap: 32, alignItems: 'center' }}>
             <div style={{ color: '#1976d2', fontWeight: 800, fontSize: 22, letterSpacing: '-0.5px', cursor: 'pointer' }} onClick={() => navigate('/')}>KuisKita</div>
